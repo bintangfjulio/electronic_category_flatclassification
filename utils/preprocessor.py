@@ -120,7 +120,7 @@ class Preprocessor(pl.LightningDataModule):
             for level, category in enumerate(leaf_path.split(" > "), 1):
                 binary = [0] * len(level_of_hierarchy[level])
                 binary[level_of_hierarchy[level].index(category.lower())] = 1
-                hierarchy_binary_label.append(binary))
+                hierarchy_binary_label.append(binary)
             
             x_input_ids.append(token['input_ids'])
             x_attention_mask.append(token['attention_mask'])
