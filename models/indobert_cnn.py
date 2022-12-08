@@ -52,7 +52,7 @@ class IndoBERT_CNN(pl.LightningModule):
         return optimizer
     
     def training_step(self, train_batch, batch_idx):
-        x_input_ids, x_attention_mask, flat_target, hierarchy_target = train_batch
+        x_input_ids, x_attention_mask, flat_target = train_batch
 
         output = self(input_ids=x_input_ids, attention_mask=x_attention_mask)
         loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
@@ -66,7 +66,7 @@ class IndoBERT_CNN(pl.LightningModule):
         return loss
 
     def validation_step(self, valid_batch, batch_idx):
-        x_input_ids, x_attention_mask, flat_target, hierarchy_target = valid_batch
+        x_input_ids, x_attention_mask, flat_target = valid_batch
 
         output = self(input_ids=x_input_ids, attention_mask=x_attention_mask)
         loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
@@ -80,7 +80,7 @@ class IndoBERT_CNN(pl.LightningModule):
         return loss
 
     def test_step(self, test_batch, batch_idx):
-        x_input_ids, x_attention_mask, flat_target, hierarchy_target = test_batch
+        x_input_ids, x_attention_mask, flat_target = test_batch
 
         output = self(input_ids=x_input_ids, attention_mask=x_attention_mask)
         loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
