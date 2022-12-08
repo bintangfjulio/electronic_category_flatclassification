@@ -76,7 +76,7 @@ class Preprocessor(pl.LightningDataModule):
         print("Max Length:", max_length)
         
         return max_length
-      
+        
     def generate_hierarchy(self):
         hierarchy_of_level = {}
         level_of_hierarchy = {}
@@ -167,6 +167,6 @@ class Preprocessor(pl.LightningDataModule):
         text = re.sub("'", '', text)
         text = re.sub(r'\d+', '', text)
         text = ' '.join([word for word in text.split() if word not in self.stop_words])
-        text = self.stemmer.stem(text.strip())
+        text = text.strip()
 
-        return text
+        return self.stemmer.stem(text)
