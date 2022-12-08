@@ -99,7 +99,7 @@ class Preprocessor(pl.LightningDataModule):
 
     def preprocessing_data(self, dataset): 
         max_length = self.get_maxlength(dataset)
-        hierarchy_of_level, level_of_hierarchy = self.generate_hierarchy()
+        # hierarchy_of_level, level_of_hierarchy = self.generate_hierarchy()
         
         x_input_ids, x_attention_mask, flat_target, hierarchy_target = [], [], [], []
 
@@ -114,25 +114,25 @@ class Preprocessor(pl.LightningDataModule):
             flat_binary_label = [0] * len(level_of_hierarchy[3])
             flat_binary_label[level_of_hierarchy[3].index(flat_label.lower())] = 1     
             
-            hierarchy_binary_label = []
+#             hierarchy_binary_label = []
             
-            leaf_path = data[3]
-            for level, category in enumerate(leaf_path.split(" > "), 1):
-                binary = [0] * len(level_of_hierarchy[level])
-                binary[level_of_hierarchy[level].index(category.lower())] = 1
-                hierarchy_binary_label.append(binary)
+#             leaf_path = data[3]
+#             for level, category in enumerate(leaf_path.split(" > "), 1):
+#                 binary = [0] * len(level_of_hierarchy[level])
+#                 binary[level_of_hierarchy[level].index(category.lower())] = 1
+#                 hierarchy_binary_label.append(binary)
             
             x_input_ids.append(token['input_ids'])
             x_attention_mask.append(token['attention_mask'])
             flat_target.append(flat_binary_label)
-            hierarchy_target.append(hierarchy_binary_label)
+#             hierarchy_target.append(hierarchy_binary_label)
 
         x_input_ids = torch.tensor(x_input_ids)
         x_attention_mask = torch.tensor(x_attention_mask)
         flat_target = torch.tensor(flat_target)
-        hierarchy_target = torch.tensor(hierarchy_target)
+        # hierarchy_target = torch.tensor(hierarchy_target)
         
-        tensor_dataset = TensorDataset(x_input_ids, x_attention_mask, flat_target, hierarchy_target)
+        tensor_dataset = TensorDataset(x_input_ids, x_attention_mask, flat_target)
 
         train_valid_size = round(len(tensor_dataset) * 0.8)
         test_size = len(tensor_dataset) - train_valid_size
