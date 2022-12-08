@@ -99,7 +99,7 @@ class Preprocessor(pl.LightningDataModule):
 
     def preprocessing_data(self, dataset): 
         max_length = self.get_maxlength(dataset)
-        # hierarchy_of_level, level_of_hierarchy = self.generate_hierarchy()
+        hierarchy_of_level, level_of_hierarchy = self.generate_hierarchy()
         
         x_input_ids, x_attention_mask, flat_target, hierarchy_target = [], [], [], []
 
