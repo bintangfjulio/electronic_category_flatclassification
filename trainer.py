@@ -8,6 +8,7 @@ from models.indobert_cnn import IndoBERT_CNN
 
 if __name__ == "__main__":
     pl.seed_everything(42, workers=True)
+    
     dataset = pd.read_csv('datasets/product_tokopedia.csv')
     num_classes = len(dataset['leaf'].drop_duplicates().values.tolist())
     
