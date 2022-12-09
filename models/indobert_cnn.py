@@ -7,42 +7,28 @@ from sklearn.metrics import classification_report
 from transformers import BertModel
 
 class IndoBERT_CNN(pl.LightningModule):
-    def __init__(self, lr, num_classes, dropout=0.1, embedding_size=768, filters_in=4, filters_out=32):
+    def __init__(self, lr, num_classes, dropout=0.1, embedding_size=768, window_sizes=[1, 2, 3, 4, 5], filters_in=4, filters_out=32):
         super(IndoBERT_CNN, self).__init__()
+        self.bert = BertModel.from_pretrained('indolem/indobert-base-uncased', output_hidden_states=True)
+        self.conv_layers = nn.ModuleList([nn.Conv2d(filters_in, filters_out, (window_size, embedding_size)) for window_size in window_sizes])
         self.lr = lr
         self.dropout = nn.Dropout(dropout)
-        self.bert = BertModel.from_pretrained('indolem/indobert-base-uncased', output_hidden_states=True)
-        
-        conv_layers = 5
-        self.conv1 = nn.Conv2d(filters_in, filters_out, (1, embedding_size))
-        self.conv2 = nn.Conv2d(filters_in, filters_out, (2, embedding_size))
-        self.conv3 = nn.Conv2d(filters_in, filters_out, (3, embedding_size))
-        self.conv4 = nn.Conv2d(filters_in, filters_out, (4, embedding_size))
-        self.conv5 = nn.Conv2d(filters_in, filters_out, (5, embedding_size))
-        self.classifier = nn.Linear(conv_layers * filters_out, num_classes)
-        
+        self.classifier = nn.Linear(len(window_sizes) * filters_out, num_classes)
         self.sigmoid = nn.Sigmoid()
         self.criterion = nn.BCELoss()
 
     def forward(self, input_ids, attention_mask):
-        bert_output = self.bert(input_ids=input_ids, attention_mask=attention_mask)
-        bert_hidden_state = bert_output[2]
-        bert_hidden_state = torch.stack(bert_hidden_state, dim=1)
-        bert_hidden_state = bert_hidden_state[:, -4:]
+        bert_hidden_states = self.bert(input_ids=input_ids, attention_mask=attention_mask)[2][-4:]
+        bert_hidden_states = torch.stack(bert_hidden_states, dim=1)
         
-        pooler = [
-            F.relu(self.conv1(bert_hidden_state).squeeze(3)),
-            F.relu(self.conv2(bert_hidden_state).squeeze(3)),
-            F.relu(self.conv3(bert_hidden_state).squeeze(3)),
-            F.relu(self.conv4(bert_hidden_state).squeeze(3)),
-            F.relu(self.conv5(bert_hidden_state).squeeze(3))
-        ]
-        
-        pooler = [ F.max_pool1d(output, output.size(2)).squeeze(2) for output in pooler ]
-        flatten = torch.cat(pooler, dim=1) 
-        flatten = self.dropout(flatten)
-        dense = self.classifier(flatten)
-        output = self.sigmoid(dense)
+        pooler = [F.relu(conv_layer(bert_hidden_states)).squeeze(3) for conv_layer in self.conv_layers] 
+        max_pooler = [F.max_pool1d(output, output.size(2)).squeeze(2) for output in pooler]  
+      
+        flatten = torch.cat(max_pooler, dim=1) 
+  
+        fully_connected_layer = self.dropout(flatten)
+        fully_connected_layer = self.classifier(fully_connected_layer)
+        output = self.sigmoid(fully_connected_layer)
         
         return output
 
