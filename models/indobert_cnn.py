@@ -26,9 +26,9 @@ class IndoBERT_CNN(pl.LightningModule):
       
         flatten = torch.cat(max_pooler, dim=1) 
   
-        fully_connected_layer = self.dropout(flatten)
-        fully_connected_layer = self.classifier(fully_connected_layer)
-        output = self.sigmoid(fully_connected_layer)
+        fully_connected = self.dropout(flatten)
+        fully_connected = self.classifier(fully_connected)
+        output = self.sigmoid(fully_connected)
         
         return output
 
