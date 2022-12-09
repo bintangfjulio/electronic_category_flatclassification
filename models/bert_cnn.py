@@ -6,9 +6,9 @@ import torch.nn.functional as F
 from sklearn.metrics import classification_report
 from transformers import BertModel
 
-class IndoBERT_CNN(pl.LightningModule):
+class BERT_CNN(pl.LightningModule):
     def __init__(self, lr, num_classes, dropout=0.1, embedding_size=768, window_sizes=[1, 2, 3, 4, 5], filters_in=4, filters_out=32):
-        super(IndoBERT_CNN, self).__init__()
+        super(BERT_CNN, self).__init__()
         self.bert = BertModel.from_pretrained('indolem/indobert-base-uncased', output_hidden_states=True)
         self.conv_layers = nn.ModuleList([nn.Conv2d(filters_in, filters_out, (window_size, embedding_size)) for window_size in window_sizes])
         self.lr = lr
@@ -20,29 +20,29 @@ class IndoBERT_CNN(pl.LightningModule):
     def forward(self, input_ids, attention_mask):
         bert_hidden_states = self.bert(input_ids=input_ids, attention_mask=attention_mask)[2][-4:]
         bert_hidden_states = torch.stack(bert_hidden_states, dim=1)
-        
+
         pooler = [F.relu(conv_layer(bert_hidden_states)).squeeze(3) for conv_layer in self.conv_layers] 
         max_pooler = [F.max_pool1d(output, output.size(2)).squeeze(2) for output in pooler]  
-      
+
         flatten = torch.cat(max_pooler, dim=1) 
-  
+
         fully_connected = self.dropout(flatten)
         fully_connected = self.classifier(fully_connected)
         output = self.sigmoid(fully_connected)
-        
+
         return output
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
 
         return optimizer
-    
+
     def training_step(self, train_batch, batch_idx):
         x_input_ids, x_attention_mask, flat_target = train_batch
 
         output = self(input_ids=x_input_ids, attention_mask=x_attention_mask)
         loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
-        
+
         preds = output.argmax(1).cpu()
         flat_target = flat_target.argmax(1).cpu()
         report = classification_report(flat_target, preds, output_dict=True, zero_division=0)
@@ -56,11 +56,11 @@ class IndoBERT_CNN(pl.LightningModule):
 
         output = self(input_ids=x_input_ids, attention_mask=x_attention_mask)
         loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
-        
+
         preds = output.argmax(1).cpu()
         flat_target = flat_target.argmax(1).cpu()
         report = classification_report(flat_target, preds, output_dict=True, zero_division=0)
-        
+
         self.log_dict({'val_loss': loss, 'val_accuracy': report["accuracy"]}, prog_bar=True, on_epoch=True)
 
         return loss
@@ -70,7 +70,7 @@ class IndoBERT_CNN(pl.LightningModule):
 
         output = self(input_ids=x_input_ids, attention_mask=x_attention_mask)
         loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
-        
+
         preds = output.argmax(1).cpu()
         flat_target = flat_target.argmax(1).cpu()
         report = classification_report(flat_target, preds, output_dict=True, zero_division=0)
