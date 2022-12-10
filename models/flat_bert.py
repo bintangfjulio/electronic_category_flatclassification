@@ -18,8 +18,8 @@ class Flat_BERT(pl.LightningModule):
 
     def forward(self, input_ids):
         bert_output = self.bert(input_ids=input_ids)
-        bert_last_hiddenstate = bert_output[0]
-        pooler = bert_last_hiddenstate[:, 0]
+        last_hidden_state = bert_output[0]
+        pooler = last_hidden_state[:, 0]
         pooler = self.pre_classifier(pooler)
         pooler = self.tanh(pooler)
         pooler = self.dropout(pooler)
