@@ -17,7 +17,6 @@ class Flat_Preprocessor(pl.LightningDataModule):
         self.batch_size = batch_size
         self.dataset = dataset
         self.target_names = target_names
-        self.num_classes = len(target_names)
         self.stop_words = StopWordRemoverFactory().get_stop_words()
         self.stemmer = StemmerFactory().create_stemmer()
         self.tokenizer = BertTokenizer.from_pretrained('indolem/indobert-base-uncased')
@@ -116,7 +115,7 @@ class Flat_Preprocessor(pl.LightningDataModule):
         for data in dataset.values.tolist():
             name = self.data_cleaning(str(data[0])) 
 
-            binary_label = [0] * self.num_classes
+            binary_label = [0] * len(target_names)
             binary_label[int(data[3])] = 1
 
             token = self.tokenizer(text=name, max_length=max_length, padding="max_length", truncation=True)  
