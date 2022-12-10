@@ -7,7 +7,7 @@ from utils.preprocessor import Preprocessor
 from models.bert_cnn import BERT_CNN
 
 if __name__ == "__main__":
-    pl.seed_everything(42, workers=True)
+    pl.seed_everything(1234, workers=True)
     
     dataset = pd.read_csv('datasets/product_tokopedia.csv')
     num_classes = len(dataset['leaf'].drop_duplicates().values.tolist())
@@ -20,14 +20,14 @@ if __name__ == "__main__":
     early_stop_callback = EarlyStopping(monitor='val_loss', 
                                         min_delta=0.00, 
                                         check_on_train_epoch_end=1, 
-                                        patience=3)
+                                        patience=10)
 
     trainer = pl.Trainer(
         accelerator='gpu',
-        max_epochs=50,
+        max_epochs=100,
         default_root_dir="./checkpoints/flat_bertcnn_results",
         callbacks = [checkpoint_callback, early_stop_callback],
-        logger=logger,
+        logger=logger
         deterministic=True)
 
     trainer.fit(model, datamodule=module)
