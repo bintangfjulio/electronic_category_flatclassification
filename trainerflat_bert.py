@@ -13,7 +13,7 @@ if __name__ == "__main__":
     target_names  = dataset['leaf'].drop_duplicates().values.tolist()
     
     module = Flat_Preprocessor(batch_size=32, dataset=dataset, target_names=target_names) 
-    model = Flat_BERT(lr=5e-5, num_classes=len(target_names))
+    model = Flat_BERT(lr=2e-5, num_classes=len(target_names))
 
     checkpoint_callback = ModelCheckpoint(dirpath='./checkpoints/flat_bert_results', monitor='val_loss')
     logger = TensorBoardLogger("logs", name="flat_bert_results")
