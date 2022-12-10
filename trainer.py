@@ -7,13 +7,13 @@ from utils.preprocessor import Preprocessor
 from models.bert_cnn import BERT_CNN
 
 if __name__ == "__main__":
-    pl.seed_everything(1234, workers=True)
+    pl.seed_everything(42, workers=True)
     
     dataset = pd.read_csv('datasets/product_tokopedia.csv')
     num_classes = len(dataset['leaf'].drop_duplicates().values.tolist())
     
     module = Preprocessor(batch_size=32, dataset=dataset) 
-    model = BERT_CNN(lr=2e-5, num_classes=num_classes)
+    model = BERT_CNN(lr=5e-5, num_classes=num_classes)
 
     checkpoint_callback = ModelCheckpoint(dirpath='./checkpoints/flat_bertcnn_results', monitor='val_loss')
     logger = TensorBoardLogger("logs", name="flat_bertcnn_results")
