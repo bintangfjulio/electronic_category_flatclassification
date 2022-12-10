@@ -17,9 +17,11 @@ class BERT_CNN(pl.LightningModule):
         self.sigmoid = nn.Sigmoid()
         self.criterion = nn.BCELoss()
 
-    def forward(self, input_ids, attention_mask):
-        bert_hidden_states = self.bert(input_ids=input_ids, attention_mask=attention_mask)[2][-4:]
+    def forward(self, input_ids):
+        bert_output = self.bert(input_ids=input_ids)
+        bert_hidden_states = bert_output[2]
         bert_hidden_states = torch.stack(bert_hidden_states, dim=1)
+        bert_hidden_states = bert_hidden_state[:, -4:]
 
         pooler = [F.relu(conv_layer(bert_hidden_states)).squeeze(3) for conv_layer in self.conv_layers] 
         max_pooler = [F.max_pool1d(output, output.size(2)).squeeze(2) for output in pooler]  
@@ -38,42 +40,42 @@ class BERT_CNN(pl.LightningModule):
         return optimizer
 
     def training_step(self, train_batch, batch_idx):
-        x_input_ids, x_attention_mask, flat_target = train_batch
+        input_ids, target = train_batch
 
-        output = self(input_ids=x_input_ids, attention_mask=x_attention_mask)
-        loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
+        output = self(input_ids=input_ids)
+        loss = self.criterion(output.cpu(), target=target.float().cpu())
 
         preds = output.argmax(1).cpu()
-        flat_target = flat_target.argmax(1).cpu()
-        report = classification_report(flat_target, preds, output_dict=True, zero_division=0)
+        target = target.argmax(1).cpu()
+        report = classification_report(target, preds, output_dict=True, zero_division=0)
 
         self.log_dict({'train_loss': loss, 'train_accuracy': report["accuracy"]}, prog_bar=True, on_epoch=True)
 
         return loss
 
     def validation_step(self, valid_batch, batch_idx):
-        x_input_ids, x_attention_mask, flat_target = valid_batch
+        input_ids, target = valid_batch
 
-        output = self(input_ids=x_input_ids, attention_mask=x_attention_mask)
-        loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
+        output = self(input_ids=input_ids)
+        loss = self.criterion(output.cpu(), target=target.float().cpu())
 
         preds = output.argmax(1).cpu()
-        flat_target = flat_target.argmax(1).cpu()
-        report = classification_report(flat_target, preds, output_dict=True, zero_division=0)
+        target = target.argmax(1).cpu()
+        report = classification_report(target, preds, output_dict=True, zero_division=0)
 
         self.log_dict({'val_loss': loss, 'val_accuracy': report["accuracy"]}, prog_bar=True, on_epoch=True)
 
         return loss
 
     def test_step(self, test_batch, batch_idx):
-        x_input_ids, x_attention_mask, flat_target = test_batch
+        x_input_ids, target = test_batch
 
-        output = self(input_ids=x_input_ids, attention_mask=x_attention_mask)
-        loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
+        output = self(input_ids=input_ids)
+        loss = self.criterion(output.cpu(), target=target.float().cpu())
 
         preds = output.argmax(1).cpu()
-        flat_target = flat_target.argmax(1).cpu()
-        report = classification_report(flat_target, preds, output_dict=True, zero_division=0)
+        target = target.argmax(1).cpu()
+        report = classification_report(target, preds, output_dict=True, zero_division=0)
 
         self.log_dict({'test_loss': loss, 'test_accuracy': report["accuracy"]}, prog_bar=True, on_epoch=True)
 
