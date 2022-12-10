@@ -20,7 +20,7 @@ if __name__ == "__main__":
     early_stop_callback = EarlyStopping(monitor='val_loss', 
                                         min_delta=0.00, 
                                         check_on_train_epoch_end=1, 
-                                        patience=10)
+                                        patience=5)
 
     trainer = pl.Trainer(
         accelerator='gpu',
