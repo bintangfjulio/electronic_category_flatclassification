@@ -17,11 +17,11 @@ if __name__ == "__main__":
 
     checkpoint_callback = ModelCheckpoint(dirpath='./checkpoints/flat_bertcnn2d_results', monitor='val_loss')
     logger = TensorBoardLogger("logs", name="flat_bertcnn2d_results")
-    early_stop_callback = EarlyStopping(monitor='val_loss', min_delta=0.00, check_on_train_epoch_end=1, patience=2)
+    early_stop_callback = EarlyStopping(monitor='val_loss', min_delta=0.00, check_on_train_epoch_end=1, patience=3)
 
     trainer = pl.Trainer(
         accelerator='gpu',
-        max_epochs=50,
+        max_epochs=30,
         default_root_dir="./checkpoints/flat_bertcnn2d_results",
         callbacks = [checkpoint_callback, early_stop_callback],
         logger=logger,
