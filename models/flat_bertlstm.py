@@ -6,32 +6,70 @@ from sklearn.metrics import classification_report
 from transformers import BertModel
 
 class Flat_BERTLSTM(pl.LightningModule):
-    def __init__(self, lr, num_classes, dropout=0.1, bert_embedding_size=768, lstm_hidden_size=1024, lstm_num_layers=2):
+    def __init__(self, lr, num_classes, dropout=0.1, embedding_size=768, hidden_size=768, num_layers=2):
         super(Flat_BERTLSTM, self).__init__() 
         self.lr = lr
         self.num_classes = num_classes
-        self.dropout = nn.Dropout(dropout)
-        self.relu = nn.ReLU()    
-        self.criterion = nn.BCELoss() 
-
         self.bert = BertModel.from_pretrained('indolem/indobert-base-uncased') 
-        self.lstm = nn.LSTM(input_size=bert_embedding_size,
-                            hidden_size=lstm_hidden_size,
-                            num_layers=lstm_num_layers)
 
-        self.relu_dimension = [1024, 256, 128, 64] 
-        self.max_sequent_length = 128
-        self.hidden_to_dense = nn.Linear(self.bert_hidden_size + self.lstm_hidden_size, self.relu_dimension[0])
-        
-        modules = []
+        self.lstm = nn.LSTM(input_size=embedding_size, 
+                            hidden_size=hidden_size, 
+                            num_layers=num_layers,
+                            bidirectional=True, 
+                            batch_first=True, 
+                            dropout=dropout)
 
-        for i in range(len(self.relu_dimension) - 1):
-            modules.append(nn.Linear(self.relu_dimension[i], self.relu_dimension[i + 1]))
-            modules.append(nn.ReLU())
-            modules.append(nn.Dropout(dropout))
+        self.dropout = nn.Dropout(dropout)
+        self.classifier =  nn.Linear(hidden_size * num_layers, num_classes)
+        self.criterion = nn.BCELoss()
 
-        dense_to_label = nn.Linear(self.relu_dimension[-1], self.num_classes)
-        modules.append(dense_to_label)
+    def forward(self, input_ids):
+        bert_output, _ = self.bert(input_ids=input_ids, return_dict=False)
 
-        self.classifier = nn.Sequential(*modules)
+        output, _ = self.lstm(bert_output)
+        output = self.dropout(output)
+        output = self.classifier(output[:, -1, :]) 
 
+        return output
+
+     def training_step(self, train_batch, batch_idx):
+        input_ids, target = train_batch
+
+        output = self(input_ids=input_ids)
+        loss = self.criterion(output.cpu(), target=target.float().cpu())
+
+        preds = output.argmax(1).cpu()
+        target = target.argmax(1).cpu()
+        report = classification_report(target, preds, output_dict=True, zero_division=0)
+
+        self.log_dict({'train_loss': loss, 'train_accuracy': report["accuracy"]}, prog_bar=True, on_epoch=True)
+
+        return loss
+
+    def validation_step(self, valid_batch, batch_idx):
+        input_ids, target = valid_batch
+
+        output = self(input_ids=input_ids)
+        loss = self.criterion(output.cpu(), target=target.float().cpu())
+
+        preds = output.argmax(1).cpu()
+        target = target.argmax(1).cpu()
+        report = classification_report(target, preds, output_dict=True, zero_division=0)
+
+        self.log_dict({'val_loss': loss, 'val_accuracy': report["accuracy"]}, prog_bar=True, on_epoch=True)
+
+        return loss
+
+    def test_step(self, test_batch, batch_idx):
+        input_ids, target = test_batch
+
+        output = self(input_ids=input_ids)
+        loss = self.criterion(output.cpu(), target=target.float().cpu())
+
+        preds = output.argmax(1).cpu()
+        target = target.argmax(1).cpu()
+        report = classification_report(target, preds, output_dict=True, zero_division=0)
+
+        self.log_dict({'test_loss': loss, 'test_accuracy': report["accuracy"]}, prog_bar=True, on_epoch=True)
+
+        return loss
