@@ -20,7 +20,7 @@ class Flat_BERTLSTM(pl.LightningModule):
                             dropout=dropout)
 
         self.dropout = nn.Dropout(dropout)
-        self.classifier =  nn.Linear(hidden_size * num_layers, num_classes)
+        self.classifier =  nn.Linear(hidden_size * 2, num_classes)
         self.criterion = nn.BCELoss()
 
     def forward(self, input_ids):
