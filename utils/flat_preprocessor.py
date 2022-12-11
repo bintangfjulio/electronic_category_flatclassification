@@ -68,13 +68,13 @@ class Flat_Preprocessor(pl.LightningDataModule):
 
     def balancing_data(self, dataset, target_names):
         labels = target_names
-        
+
         name = []
         root = []
         node = []
         leaf = []
 
-        for label in labels:
+        for i, label in enumerate(labels):
             length = 0
 
             for data in dataset.values.tolist():
@@ -85,6 +85,13 @@ class Flat_Preprocessor(pl.LightningDataModule):
                         node.append(data[2])
                         leaf.append(data[3])
                         length += 1
+
+            if length != 2000:
+                for i in range(length):
+                    name.pop()
+                    root.pop()
+                    node.pop()
+                    leaf.pop()
 
         balanced_dataset = pd.DataFrame({'nama': name, 'root': root, 'node': node, 'leaf': leaf})
 
