@@ -7,7 +7,7 @@ from utils.flat_preprocessor import Flat_Preprocessor
 from models.flat_bert import Flat_BERT
 
 if __name__ == "__main__":
-    pl.seed_everything(1234, workers=True)
+    pl.seed_everything(42, workers=True)
     
     dataset = pd.read_csv('datasets/product_tokopedia.csv')
     target_names = dataset['leaf'].drop_duplicates().values.tolist()
