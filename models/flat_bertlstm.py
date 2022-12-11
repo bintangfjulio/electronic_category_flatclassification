@@ -24,7 +24,7 @@ class Flat_BERTLSTM(pl.LightningModule):
 
     def forward(self, input_ids):
         bert_output = self.bert(input_ids=input_ids)
-        bert_last_hidden_state = bert_ouput[0]
+        bert_last_hidden_state = bert_output[0]
 
         _, (last_hidden_state, _) = self.lstm(bert_last_hidden_state) 
         
@@ -37,7 +37,7 @@ class Flat_BERTLSTM(pl.LightningModule):
         
         return output
 
-     def training_step(self, train_batch, batch_idx):
+    def training_step(self, train_batch, batch_idx):
         input_ids, target = train_batch
 
         output = self(input_ids=input_ids)
