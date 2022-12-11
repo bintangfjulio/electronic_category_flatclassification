@@ -3,7 +3,7 @@ import torch
 import pytorch_lightning as pl
 
 from sklearn.metrics import classification_report
-from transformers import BertModelg
+from transformers import BertModel
 
 class Flat_BERTLSTM(pl.LightningModule):
     def __init__(self, lr, num_classes, dropout=0.1, embedding_size=768, hidden_size=768, num_layers=2):
