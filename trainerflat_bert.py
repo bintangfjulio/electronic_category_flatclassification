@@ -10,7 +10,7 @@ if __name__ == "__main__":
     pl.seed_everything(1234, workers=True)
     
     dataset = pd.read_csv('datasets/product_tokopedia.csv')
-    target_names  = dataset['leaf'].drop_duplicates().values.tolist()
+    target_names = dataset['leaf'].drop_duplicates().values.tolist()
     
     module = Flat_Preprocessor(batch_size=32, dataset=dataset, target_names=target_names) 
     model = Flat_BERT(lr=2e-5, num_classes=len(target_names))
