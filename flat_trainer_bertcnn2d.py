@@ -15,7 +15,7 @@ if __name__ == "__main__":
     module = Flat_Preprocessor(batch_size=32, dataset=dataset, target_names=target_names) 
     model = Flat_BERTCNN2D(lr=2e-5, num_classes=len(target_names))
 
-    checkpoint_callback = ModelCheckpoint(dirpath='./checkpoints/flat_bertcnn2_results', monitor='val_loss')
+    checkpoint_callback = ModelCheckpoint(dirpath='./checkpoints/flat_bertcnn2d_results', monitor='val_loss')
     logger = TensorBoardLogger("logs", name="flat_bertcnn2d_results")
     early_stop_callback = EarlyStopping(monitor='val_loss', min_delta=0.00, check_on_train_epoch_end=1, patience=3)
 
