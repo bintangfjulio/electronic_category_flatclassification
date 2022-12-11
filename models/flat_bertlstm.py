@@ -10,26 +10,31 @@ class Flat_BERTLSTM(pl.LightningModule):
         super(Flat_BERTLSTM, self).__init__() 
         self.lr = lr
         self.num_classes = num_classes
+        self.dropout = nn.Dropout(dropout)
         self.bert = BertModel.from_pretrained('indolem/indobert-base-uncased') 
+        self.criterion = nn.BCELoss()
 
         self.lstm = nn.LSTM(input_size=embedding_size, 
                             hidden_size=hidden_size, 
                             num_layers=num_layers,
-                            bidirectional=True, 
-                            batch_first=True, 
-                            dropout=dropout)
-
-        self.dropout = nn.Dropout(dropout)
-        self.classifier =  nn.Linear(hidden_size * 2, num_classes)
-        self.criterion = nn.BCELoss()
+                            batch_first=True,
+                            bidirectional=True)
+        
+        self.classifier = nn.Linear(hidden_size * 2, num_classes)
 
     def forward(self, input_ids):
-        bert_output, _ = self.bert(input_ids=input_ids, return_dict=False)
+        bert_output = self.bert(input_ids=input_ids)
+        bert_last_hidden_state = bert_ouput[0]
 
-        output, _ = self.lstm(bert_output)
-        output = self.dropout(output)
-        output = self.classifier(output[:, -1, :]) 
-
+        _, (last_hidden_state, _) = self.lstm(bert_last_hidden_state) 
+        
+        last_hidden_state_left = last_hidden_state[-2]
+        last_hidden_state_right = last_hidden_state[-1]
+        last_hidden_state_output = torch.cat([last_hidden_state_left, last_hidden_state_right], dim=-1)
+            
+        output = self.dropout(last_hidden_state_output)
+        output = self.classifier(output) 
+        
         return output
 
      def training_step(self, train_batch, batch_idx):
