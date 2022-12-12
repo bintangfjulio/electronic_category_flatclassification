@@ -18,7 +18,6 @@ class Flat_BERTCNN1D(pl.LightningModule):
 
     def forward(self, input_ids):
         bert_output = self.bert(input_ids=input_ids)
-        bert_output = self.dropout(bert_output)
         last_hidden_state = bert_output.permute(0, 2, 1)
 
         pooler = [F.relu(conv_layer(last_hidden_state)) for conv_layer in self.conv_layers] 
