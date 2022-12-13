@@ -118,9 +118,9 @@ class Preprocessor(pl.LightningDataModule):
             token = self.tokenizer(text=name, max_length=max_length, padding="max_length", truncation=True)  
 
             path = data[3]
-            nodes = path[:-1].lower().split(" > ")
+            nodes = path.lower().split(" > ")
 
-            for depth, node in enumerate(nodes):
+            for depth, node in enumerate(nodes[:-1]):
                 child = nodes[depth + 1]
                 child_of_parent = list(grouped_parent_child[node])
                 child_idx = child_of_parent.index(child)
