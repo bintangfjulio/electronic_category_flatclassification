@@ -14,7 +14,6 @@ from torch.utils.data import TensorDataset, DataLoader
 class Preprocessor(pl.LightningDataModule):
     def __init__(self, batch_size, dataset, num_classes, hierarchy):
         super(Preprocessor, self).__init__()
-        pl.seed_everything(42, workers=True)
         self.batch_size = batch_size
         self.dataset = dataset
         self.num_classes = num_classes
