@@ -18,7 +18,6 @@ class BERT(pl.LightningModule):
         cls_hidden_state = last_hidden_state[:, 0]
         pooler = self.linear_layer(cls_hidden_state)
         pooled_output = self.tanh(pooler)
-        pooled_output = self.dropout(pooled_output)
-        output = self.classifier(pooled_output)
+        output = self.classifier(self.dropout(pooled_output))
 
         return output
