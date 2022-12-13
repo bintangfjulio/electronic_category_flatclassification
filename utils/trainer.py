@@ -84,13 +84,13 @@ class Trainer:
         pl.seed_everything(42, workers=True)
         
         checkpoint_callback = ModelCheckpoint(dirpath=f'./checkpoints/flat_{model_path}_result', monitor='val_loss')
-        logger = TensorBoardLogger("logs", name=f"flat_{model_path}_result")
+        logger = TensorBoardLogger('logs', name=f'flat_{model_path}_result')
         early_stop_callback = EarlyStopping(monitor='val_loss', min_delta=0.00, check_on_train_epoch_end=1, patience=3)
 
         trainer = pl.Trainer(
             accelerator='gpu',
             max_epochs=30,
-            default_root_dir=f"./checkpoints/flat_{model_path}_result",
+            default_root_dir=f'./checkpoints/flat_{model_path}_result',
             callbacks = [checkpoint_callback, early_stop_callback],
             logger=logger,
             deterministic=True)
