@@ -54,11 +54,11 @@ class Preprocessor(pl.LightningDataModule):
         )
     
     def preprocessor(self):
-        if os.path.exists("datasets/preprocessed_flat/train_set.pt") and os.path.exists("datasets/preprocessed_flat/valid_set.pt") and os.path.exists("datasets/preprocessed_flat/test_set.pt"):
+        if os.path.exists("datasets/train_set.pt") and os.path.exists("datasets/valid_set.pt") and os.path.exists("datasets/test_set.pt"):
             print("\nLoading Data...")
-            train_set = torch.load("datasets/preprocessed_flat/train_set.pt")
-            valid_set = torch.load("datasets/preprocessed_flat/valid_set.pt")
-            test_set = torch.load("datasets/preprocessed_flat/test_set.pt")
+            train_set = torch.load("datasets/train_set.pt")
+            valid_set = torch.load("datasets/valid_set.pt")
+            test_set = torch.load("datasets/test_set.pt")
             print('[ Loading Completed ]\n')
 
         else:
@@ -148,13 +148,13 @@ class Preprocessor(pl.LightningDataModule):
             train_set, valid_set, test_set = self.data_splitting(input_ids, hierarchical_target)
             hierarchical_dataset.append([train_set, valid_set, test_set])
 
-        with open("datasets/preprocessed_hierarchical/hierarchical_dataset.pkl", "wb") as hierarchical_preprocessed:
+        with open("datasets/hierarchical_dataset.pkl", "wb") as hierarchical_preprocessed:
             pickle.dump(hierarchical_dataset, hierarchical_preprocessed, protocol=pickle.HIGHEST_PROTOCOL)
 
         train_set, valid_set, test_set = self.data_splitting(input_ids, flat_target)
-        torch.save(train_set, "datasets/preprocessed_flat/train_set.pt")
-        torch.save(valid_set, "datasets/preprocessed_flat/valid_set.pt")
-        torch.save(test_set, "datasets/preprocessed_flat/test_set.pt")
+        torch.save(train_set, "datasets/train_set.pt")
+        torch.save(valid_set, "datasets/valid_set.pt")
+        torch.save(test_set, "datasets/test_set.pt")
 
         return train_set, valid_set, test_set
 
@@ -172,7 +172,7 @@ class Preprocessor(pl.LightningDataModule):
 
         return text
 
-    def data_splitting(input_ids, target):
+    def data_splitting(self, input_ids, target):
         input_ids = torch.tensor(input_ids)
         target = torch.tensor(target)
         
