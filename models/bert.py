@@ -7,7 +7,7 @@ class BERT(pl.LightningModule):
     def __init__(self, num_classes, dropout=0.1, embedding_size=768, hidden_size=768):
         super(BERT, self).__init__()
         self.bert = BertModel.from_pretrained('indolem/indobert-base-uncased')
-        self.pre_classifier = nn.Linear(embedding_size, hidden_size)
+        self.linear_layer = nn.Linear(embedding_size, hidden_size)
         self.classifier = nn.Linear(hidden_size, num_classes)
         self.dropout = nn.Dropout(dropout)   
         self.tanh = nn.Tanh()
@@ -15,10 +15,10 @@ class BERT(pl.LightningModule):
     def forward(self, input_ids):
         bert_output = self.bert(input_ids=input_ids)
         last_hidden_state = bert_output[0]
-        pooler = last_hidden_state[:, 0]
-        pooler = self.pre_classifier(pooler)
-        pooler = self.tanh(pooler)
-        pooler = self.dropout(pooler)
-        logits = self.classifier(pooler)
+        cls_hidden_state = last_hidden_state[:, 0]
+        pooler = self.linear_layer(cls_hidden_state)
+        pooled_output = self.tanh(pooler)
+        pooled_output = self.dropout(pooled_output)
+        logits = self.classifier(pooled_output)
 
         return logits
