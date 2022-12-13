@@ -15,7 +15,6 @@ if __name__ == "__main__":
         Tree_Generator(dataset=dataset)
 
     module = Preprocessor(batch_size=32, dataset=dataset, num_classes=num_classes, hierarchy=hierarchy) 
-    module.preprocessor() # delete soon
 
     for model_path in models:
         Trainer(model_path=model_path, module=module, num_classes=num_classes, flat=True, hierarchy=False)
