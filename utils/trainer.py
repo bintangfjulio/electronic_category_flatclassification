@@ -85,7 +85,7 @@ class Trainer:
         
         checkpoint_callback = ModelCheckpoint(dirpath=f'./checkpoints/flat_{model_path}_result', monitor='val_loss')
         logger = TensorBoardLogger('logs', name=f'flat_{model_path}_result')
-        early_stop_callback = EarlyStopping(monitor='val_loss', min_delta=0.00, check_on_train_epoch_end=1, patience=3)
+        early_stop_callback = EarlyStopping(monitor='val_loss', min_delta=0.00, check_on_train_epoch_end=1, patience=10)
 
         trainer = pl.Trainer(
             accelerator='gpu',
