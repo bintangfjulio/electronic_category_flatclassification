@@ -24,7 +24,7 @@ class BERT_CNN(pl.LightningModule):
         max_pooler = [F.max_pool1d(output, output.size(2)).squeeze(2) for output in pooler]  
 
         flattener = torch.cat(max_pooler, dim=1) 
-        fully_connected_layers = self.fully_connected(self.dropout(flattener))
-        output = self.sigmoid(fully_connected_layers)
+        fully_connected_layer = self.fully_connected(self.dropout(flattener))
+        output = self.sigmoid(fully_connected_layer)
 
         return output
