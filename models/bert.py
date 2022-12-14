@@ -8,7 +8,7 @@ class BERT(pl.LightningModule):
         super(BERT, self).__init__()
         self.bert = BertModel.from_pretrained('indolem/indobert-base-uncased')
         self.linear_layer = nn.Linear(embedding_size, hidden_size)
-        self.classifier = nn.Linear(hidden_size, num_classes)
+        self.fully_connected = nn.Linear(hidden_size, num_classes)
         self.dropout = nn.Dropout(dropout)   
         self.tanh = nn.Tanh()
 
@@ -18,6 +18,6 @@ class BERT(pl.LightningModule):
         cls_hidden_state = last_hidden_state[:, 0]
         pooler = self.linear_layer(cls_hidden_state)
         pooled_output = self.tanh(pooler)
-        output = self.classifier(self.dropout(pooled_output))
+        output = self.fully_connected(self.dropout(pooled_output))
 
         return output
