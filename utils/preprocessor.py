@@ -5,6 +5,7 @@ import pytorch_lightning as pl
 import multiprocessing
 import string
 import pickle
+import sys
 
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
@@ -154,6 +155,8 @@ class Preprocessor(pl.LightningDataModule):
         torch.save(train_set, "datasets/train_set.pt")
         torch.save(valid_set, "datasets/valid_set.pt")
         torch.save(test_set, "datasets/test_set.pt")
+        
+        sys.exit()
 
         return train_set, valid_set, test_set
 
