@@ -18,6 +18,6 @@ class BERT(pl.LightningModule):
         cls_hidden_state = last_hidden_state[:, 0]
         pooler = self.linear_layer(cls_hidden_state)
         pooled_output = self.tanh(pooler)
-        output = self.fully_connected(self.dropout(pooled_output))
+        logits = self.fully_connected(self.dropout(pooled_output))
 
-        return output
+        return logits
