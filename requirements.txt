@@ -1,4 +1,3 @@
 pytorch_lightning
 Sastrawi
 transformers
-git-lfs
