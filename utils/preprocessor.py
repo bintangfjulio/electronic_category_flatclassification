@@ -105,7 +105,7 @@ class Preprocessor(pl.LightningDataModule):
         parents_idx = {parent: index for index, parent in enumerate(grouped_parent_child.keys())}
         
         arranged_by_hierarchy = [[] for i in range(len(parents_idx))]
-        input_ids, flat_target = [], []
+        flat_input_ids, flat_target = [], []
 
         max_length = self.get_maxlength(dataset)
 
@@ -132,25 +132,25 @@ class Preprocessor(pl.LightningDataModule):
                 if 'input_ids' not in arranged_by_hierarchy[parent_idx]:
                     arranged_by_hierarchy[parent_idx] = {'input_ids': [], 'hierarchical_target': []}
                 
-                arranged_by_hierarchy[parent_idx]['input_ids'].append(input_ids)
+                arranged_by_hierarchy[parent_idx]['input_ids'].append(token['input_ids'])
                 arranged_by_hierarchy[parent_idx]['hierarchical_target'].append(hierarchical_binary)
             
-            input_ids.append(token['input_ids'])
+            flat_input_ids.append(token['input_ids'])
             flat_target.append(flat_binary)
 
         hierarchical_dataset = []
 
         for data in arranged_by_hierarchy:
-            input_ids = data['input_ids']
+            hierarchical_input_ids = data['input_ids']
             hierarchical_target = data['hierarchical_target']
             
-            train_set, valid_set, test_set = self.data_splitting(input_ids, hierarchical_target)
+            train_set, valid_set, test_set = self.data_splitting(hierarchical_input_ids, hierarchical_target)
             hierarchical_dataset.append([train_set, valid_set, test_set])
 
         with open("datasets/hierarchical_dataset.pkl", "wb") as hierarchical_preprocessed:
             pickle.dump(hierarchical_dataset, hierarchical_preprocessed, protocol=pickle.HIGHEST_PROTOCOL)
 
-        train_set, valid_set, test_set = self.data_splitting(input_ids, flat_target)
+        train_set, valid_set, test_set = self.data_splitting(flat_input_ids, flat_target)
         torch.save(train_set, "datasets/train_set.pt")
         torch.save(valid_set, "datasets/valid_set.pt")
         torch.save(test_set, "datasets/test_set.pt")
