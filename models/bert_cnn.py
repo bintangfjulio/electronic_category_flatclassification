@@ -11,7 +11,7 @@ class BERT_CNN(pl.LightningModule):
         self.bert = BertModel.from_pretrained('indolem/indobert-base-uncased', output_hidden_states=True)
         self.conv_layers = nn.ModuleList([nn.Conv2d(filters_in, filters_out, (window_size, embedding_size), padding=(window_size-1, 0)) for window_size in window_sizes])
         self.dropout = nn.Dropout(dropout)
-        self.classifier = nn.Linear(len(window_sizes) * filters_out, num_classes)
+        self.fully_connected = nn.Linear(len(window_sizes) * filters_out, num_classes)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, input_ids):
@@ -24,7 +24,7 @@ class BERT_CNN(pl.LightningModule):
         max_pooler = [F.max_pool1d(output, output.size(2)).squeeze(2) for output in pooler]  
 
         flattener = torch.cat(max_pooler, dim=1) 
-        fully_connected_layers = self.classifier(self.dropout(flattener))
+        fully_connected_layers = self.fully_connected(self.dropout(flattener))
         output = self.sigmoid(fully_connected_layers)
 
         return output
