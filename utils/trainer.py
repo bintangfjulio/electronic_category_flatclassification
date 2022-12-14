@@ -30,7 +30,7 @@ class Flat_Trainer(pl.LightningModule):
         input_ids, flat_target = train_batch
 
         output = self.model(input_ids=input_ids)
-        loss = self.criterion(output.cpu(), flat_target=flat_target.float().cpu())
+        loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
 
         preds = output.argmax(1).cpu()
         flat_target = flat_target.argmax(1).cpu()
@@ -44,7 +44,7 @@ class Flat_Trainer(pl.LightningModule):
         input_ids, flat_target = valid_batch
 
         output = self.model(input_ids=input_ids)
-        loss = self.criterion(output.cpu(), flat_target=flat_target.float().cpu())
+        loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
 
         preds = output.argmax(1).cpu()
         flat_target = flat_target.argmax(1).cpu()
@@ -58,7 +58,7 @@ class Flat_Trainer(pl.LightningModule):
         input_ids, flat_target = test_batch
 
         output = self.model(input_ids=input_ids)
-        loss = self.criterion(output.cpu(), flat_target=flat_target.float().cpu())
+        loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
 
         preds = output.argmax(1).cpu()
         flat_target = flat_target.argmax(1).cpu()
