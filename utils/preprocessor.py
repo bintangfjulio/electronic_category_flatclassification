@@ -80,7 +80,7 @@ class Preprocessor(pl.LightningDataModule):
         return max_length
 
     def generate_hierarchy(self):
-        grouped_parent_child = {}
+        segmented_parent_child = {}
 
         with open(self.hierarchy, "r") as tree:
             for path in tree:
@@ -90,19 +90,19 @@ class Preprocessor(pl.LightningDataModule):
                     if depth > 0:
                         parent = nodes[depth - 1]
                         try:
-                            grouped_parent_child[parent].add(node)
+                            segmented_parent_child[parent].add(node)
                         except:
-                            grouped_parent_child[parent] = set()
-                            grouped_parent_child[parent].add(node)
+                            segmented_parent_child[parent] = set()
+                            segmented_parent_child[parent].add(node)
     
-        return grouped_parent_child
+        return segmented_parent_child
 
     def preprocessing_data(self, dataset): 
         labels_idx = dataset['leaf'].unique().tolist()
         dataset['label_idx'] = dataset['leaf'].map(lambda x: labels_idx.index(x))
 
-        grouped_parent_child = self.generate_hierarchy()
-        parents_idx = {parent: index for index, parent in enumerate(grouped_parent_child.keys())}
+        segmented_parent_child = self.generate_hierarchy()
+        parents_idx = {parent: index for index, parent in enumerate(segmented_parent_child.keys())}
         
         arranged_by_hierarchy = [[] for i in range(len(parents_idx))]
         flat_input_ids, flat_target = [], []
@@ -121,7 +121,7 @@ class Preprocessor(pl.LightningDataModule):
 
             for depth, node in enumerate(nodes[:-1]):
                 child = nodes[depth + 1]
-                child_of_parent = list(grouped_parent_child[node])
+                child_of_parent = list(segmented_parent_child[node])
                 child_idx = child_of_parent.index(child)
 
                 hierarchical_binary = [0] * len(child_of_parent)
