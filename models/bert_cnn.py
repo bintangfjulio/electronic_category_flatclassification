@@ -25,6 +25,6 @@ class BERT_CNN(pl.LightningModule):
 
         flatten = torch.cat(max_pooler, dim=1) 
         fully_connected_layer = self.fully_connected(self.dropout(flatten))
-        logits = self.sigmoid(fully_connected_layer)
+        output = self.sigmoid(fully_connected_layer)
 
-        return logits
+        return output
