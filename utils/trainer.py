@@ -81,7 +81,7 @@ class Trainer:
             self.hierarchical_fine_tune()
 
     def flat_fine_tune(self, model, module, model_path):
-        pl.seed_everything(1234, workers=True)
+        pl.seed_everything(42, workers=True)
         
         checkpoint_callback = ModelCheckpoint(dirpath=f'./checkpoints/flat_{model_path}_result', monitor='val_loss')
         logger = TensorBoardLogger('logs', name=f'flat_{model_path}_result')
