@@ -15,8 +15,9 @@ class BERT_BiLSTM(pl.LightningModule):
     def forward(self, input_ids):
         bert_output = self.bert(input_ids=input_ids)
         bert_last_hidden_state = bert_output[0]
+        hidden_state_without_cls = bert_last_hidden_state[:, 1:]
         
-        _, (lstm_last_hidden_state, _) = self.lstm(bert_last_hidden_state)
+        _, (lstm_last_hidden_state, _) = self.lstm(hidden_state_without_cls)
 
         last_hidden_state_LEFT = lstm_last_hidden_state[-2]
         last_hidden_state_RIGHT = lstm_last_hidden_state[-1]
