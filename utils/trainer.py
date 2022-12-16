@@ -92,6 +92,7 @@ class Trainer:
             max_epochs=30,
             default_root_dir=f'./checkpoints/flat_{model_path}_result',
             callbacks = [checkpoint_callback, early_stop_callback],
+            # deterministic=True,
             logger=logger)
 
         trainer.fit(model=model, datamodule=module)
