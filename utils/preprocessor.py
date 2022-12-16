@@ -59,7 +59,6 @@ class Preprocessor(pl.LightningDataModule):
             valid_set = torch.load("datasets/valid_set.pt")
             test_set = torch.load("datasets/test_set.pt")
             print('[ Loading Completed ]\n')
-
         else:
             print("\nPreprocessing Data...")
             train_set, valid_set, test_set = self.preprocessing_data(self.dataset)
@@ -69,6 +68,7 @@ class Preprocessor(pl.LightningDataModule):
 
     def get_maxlength(self, dataset, extra_space=5):
         sentences_token = []
+        
         for data in dataset.values.tolist():
             data = str(data[0]).split()
             sentences_token.append(data)
