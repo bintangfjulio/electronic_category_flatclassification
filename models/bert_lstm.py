@@ -17,7 +17,6 @@ class BERT_LSTM(pl.LightningModule):
             
         else: 
             self.fully_connected = nn.Linear(hidden_size, num_classes)
-        
 
     def forward(self, input_ids):
         bert_output = self.bert(input_ids=input_ids)
