@@ -24,6 +24,7 @@ class Preprocessor(pl.LightningDataModule):
 
     def setup(self, stage=None):
         train_set, valid_set, test_set = self.preprocessor()
+        
         if stage == "fit":
             self.train_set = train_set
             self.valid_set = valid_set
