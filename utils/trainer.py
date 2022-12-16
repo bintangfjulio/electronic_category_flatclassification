@@ -7,19 +7,26 @@ from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.metrics import classification_report
 from models.bert import BERT
 from models.bert_cnn import BERT_CNN
+from models.bert_lstm import BERT_LSTM
 
 class Flat_Trainer(pl.LightningModule):
     def __init__(self, lr, model_path, num_classes):
-        super(Flat_Trainer, self).__init__()
+        super(Flat_Trainer, self).__init__()     
+        if model_path == 'bert-cnn':
+            self.criterion = nn.BCELoss()
+        else:
+            self.criterion = nn.BCEWithLogitsLoss()
+        
         self.lr = lr
-
+        
         if model_path == 'bert':
             self.model = BERT(num_classes=num_classes)
-            self.criterion = nn.BCEWithLogitsLoss()
-
         elif model_path == 'bert-cnn':
-            self.model = BERT_CNN(num_classes=num_classes)
-            self.criterion = nn.BCELoss()
+            self.model = BERT_CNN(num_classes=num_classes) 
+        elif model_path == 'bert-bilstm':
+            self.model = BERT_LSTM(num_classes=num_classes, bidirectional=True)
+        elif model_path == 'bert-lstm':
+            self.model = BERT_LSTM(num_classes=num_classes, bidirectional=False)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
