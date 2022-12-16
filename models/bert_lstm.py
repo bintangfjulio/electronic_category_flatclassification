@@ -26,8 +26,7 @@ class BERT_LSTM(pl.LightningModule):
         if self.bidirectional:
             last_hidden_state_LEFT = lstm_last_hidden_state[-2]
             last_hidden_state_RIGHT = lstm_last_hidden_state[-1]
-            lstm_output = torch.cat([last_hidden_state_LEFT, last_hidden_state_RIGHT], dim=-1)
-            
+            lstm_output = torch.cat([last_hidden_state_LEFT, last_hidden_state_RIGHT], dim=-1)   
         else:
             lstm_output = lstm_last_hidden_state[-1]
 
