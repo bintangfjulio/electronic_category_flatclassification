@@ -13,8 +13,7 @@ class BERT_LSTM(pl.LightningModule):
         self.bidirectional = bidirectional
         
         if bidirectional:
-            self.fully_connected = nn.Linear(hidden_size * 2, num_classes)
-            
+            self.fully_connected = nn.Linear(hidden_size * 2, num_classes)    
         else: 
             self.fully_connected = nn.Linear(hidden_size, num_classes)
 
