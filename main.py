@@ -6,7 +6,7 @@ from utils.preprocessor import Preprocessor
 from utils.trainer import Trainer
 
 if __name__ == "__main__":
-    models = ['bert', 'bert-cnn']
+    models = ['bert', 'bert-cnn', 'bert-bilstm', 'bert-lstm']
     dataset = pd.read_csv('datasets/electronic_product_tokopedia.csv')
     num_classes = len(dataset['leaf'].drop_duplicates().values.tolist())
     hierarchy = 'datasets/labels_hierarchy.tree'
