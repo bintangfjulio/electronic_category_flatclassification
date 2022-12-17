@@ -104,7 +104,7 @@ class Preprocessor(pl.LightningDataModule):
         segmented_parent_child = self.generate_hierarchy()
         parents_idx = {parent: index for index, parent in enumerate(segmented_parent_child.keys())}
         
-        arranged_by_hierarchy = [[] for i in range(len(parents_idx))]
+        segmented_by_hierarchy = [[] for i in range(len(parents_idx))]
         flat_input_ids, flat_target = [], []
 
         max_length = self.get_maxlength(dataset)
@@ -129,18 +129,18 @@ class Preprocessor(pl.LightningDataModule):
                 
                 parent_idx = parents_idx[node]
 
-                if 'input_ids' not in arranged_by_hierarchy[parent_idx]:
-                    arranged_by_hierarchy[parent_idx] = {'input_ids': [], 'hierarchical_target': []}
+                if 'input_ids' not in segmented_by_hierarchy[parent_idx]:
+                    segmented_by_hierarchy[parent_idx] = {'input_ids': [], 'hierarchical_target': []}
                 
-                arranged_by_hierarchy[parent_idx]['input_ids'].append(token['input_ids'])
-                arranged_by_hierarchy[parent_idx]['hierarchical_target'].append(hierarchical_binary)
+                segmented_by_hierarchy[parent_idx]['input_ids'].append(token['input_ids'])
+                segmented_by_hierarchy[parent_idx]['hierarchical_target'].append(hierarchical_binary)
             
             flat_input_ids.append(token['input_ids'])
             flat_target.append(flat_binary)
 
         hierarchical_dataset = []
 
-        for data in arranged_by_hierarchy:
+        for data in segmented_by_hierarchy:
             hierarchical_input_ids = data['input_ids']
             hierarchical_target = data['hierarchical_target']
             
