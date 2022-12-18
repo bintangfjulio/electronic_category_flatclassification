@@ -66,7 +66,7 @@ class Preprocessor(pl.LightningDataModule):
 
         return train_set, valid_set, test_set
 
-    def get_maxlength(self, dataset, extra_space=5):
+    def get_max_length(self, dataset, extra_space=5):
         sentences_token = []
         
         for data in dataset.values.tolist():
@@ -107,7 +107,7 @@ class Preprocessor(pl.LightningDataModule):
         segmented_by_hierarchy = [[] for i in range(len(parents_idx))]
         flat_input_ids, flat_target = [], []
 
-        max_length = self.get_maxlength(dataset)
+        max_length = self.get_max_length(dataset)
 
         for data in dataset.values.tolist():
             name = self.data_cleaning(str(data[0])) 
