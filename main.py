@@ -9,15 +9,13 @@ from utils.trainer import Trainer
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', choices=['bert', 'bert-cnn', 'bert-bilstm', 'bert-lstm'], required=True, help='Model choices to fine tune')
-    parser.add_argument('--flat', type=bool, default=False, required=False, help='Turn on/off Flat Fine Tune (FFT)')
-    parser.add_argument('--hierarchy', type=bool, default=False, required=False, help='Turn on/off Hierarchical Fine Tune (HFT)')
+    parser.add_argument('--method', choices=['flat', 'hierarchy'], required=True, help='Fine tuning method choices')
     
     args = parser.parse_args()
     config = vars(args)
     
     model_path = config['model']
-    flat = config['flat']
-    hierarchy = config['hierarchy']
+    method = config['method']
 
     dataset = pd.read_csv('datasets/electronic_product_tokopedia.csv')
     num_classes = len(dataset['leaf'].drop_duplicates().values.tolist())
@@ -27,4 +25,4 @@ if __name__ == "__main__":
         Tree_Generator(dataset=dataset)
 
     module = Preprocessor(batch_size=32, dataset=dataset, num_classes=num_classes, hierarchy_tree=hierarchy_tree) 
-    Trainer(model_path=model_path, module=module, num_classes=num_classes, flat=flat, hierarchy=hierarchy)
+    Trainer(model_path=model_path, module=module, num_classes=num_classes, method=method)
