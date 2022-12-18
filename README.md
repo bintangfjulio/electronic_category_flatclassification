@@ -7,4 +7,4 @@ Repository for all scraping results and also the scraping utils for web scraping
 3. !git lfs pull
 4. !pip install -r requirements.txt
 5. !python main.py --model={model} --flat={flat} --hierarchy={hierarchy}</br>
-Note:</br>there is chooses option for run main.py are:</br>model = 'bert', 'bert-cnn', 'bert-bilstm', 'bert-lstm'</br>flat = True, False</br>hierarchy = True, False
+Note:</br>There is chooses option for run main.py are:</br>1. model: 'bert', 'bert-cnn', 'bert-bilstm', 'bert-lstm'</br>2. flat: True, False</br>3. hierarchy: True, False
