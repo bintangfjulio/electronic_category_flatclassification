@@ -79,11 +79,11 @@ class Hierarchical_Trainer:
     pass
 
 class Trainer:
-    def __init__(self, model_path, module, num_classes, flat, hierarchy):
-        if(flat):
+    def __init__(self, model_path, module, num_classes, method):
+        if method == 'flat':
             model = Flat_Trainer(lr=2e-5, num_classes=num_classes, model_path=model_path)
             self.flat_fine_tuning(model=model, module=module, model_path=model_path)
-        elif(hierarchy):
+        elif method == 'hierarchy':
             self.hierarchical_fine_tuning()
 
     def flat_fine_tuning(self, model, module, model_path):
