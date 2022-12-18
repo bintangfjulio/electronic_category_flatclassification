@@ -8,9 +8,9 @@ from utils.trainer import Trainer
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--model', choices=['bert', 'bert-cnn', 'bert-bilstm', 'bert-lstm'], required=True, help='Model choices to fine tune')
-    parser.add_argument('-f', '--flat', type=bool, default=False, required=False, help='Turn on/off Flat Fine Tune (FFT)')
-    parser.add_argument('-h', '--hierarchy', type=bool, default=False, required=False, help='Turn on/off Hierarchical Fine Tune (HFT)')
+    parser.add_argument('--model', choices=['bert', 'bert-cnn', 'bert-bilstm', 'bert-lstm'], required=True, help='Model choices to fine tune')
+    parser.add_argument('--flat', type=bool, default=False, required=False, help='Turn on/off Flat Fine Tune (FFT)')
+    parser.add_argument('--hierarchy', type=bool, default=False, required=False, help='Turn on/off Hierarchical Fine Tune (HFT)')
     
     args = parser.parse_args()
     config = vars(args)
