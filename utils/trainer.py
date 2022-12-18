@@ -83,8 +83,7 @@ class Trainer:
         if(flat):
             model = Flat_Trainer(lr=2e-5, num_classes=num_classes, model_path=model_path)
             self.flat_fine_tuning(model=model, module=module, model_path=model_path)
-
-        if(hierarchy):
+        elif(hierarchy):
             self.hierarchical_fine_tuning()
 
     def flat_fine_tuning(self, model, module, model_path):
