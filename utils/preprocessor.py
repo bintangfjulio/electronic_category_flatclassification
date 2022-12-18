@@ -12,12 +12,12 @@ from transformers import BertTokenizer
 from torch.utils.data import TensorDataset, DataLoader
 
 class Preprocessor(pl.LightningDataModule):
-    def __init__(self, batch_size, dataset, num_classes, hierarchy):
+    def __init__(self, batch_size, dataset, num_classes, hierarchy_tree):
         super(Preprocessor, self).__init__()
         self.batch_size = batch_size
         self.dataset = dataset
         self.num_classes = num_classes
-        self.hierarchy = hierarchy
+        self.hierarchy_tree = hierarchy_tree
         self.stop_words = StopWordRemoverFactory().get_stop_words()
         self.stemmer = StemmerFactory().create_stemmer()
         self.tokenizer = BertTokenizer.from_pretrained('indolem/indobert-base-uncased')
@@ -79,10 +79,10 @@ class Preprocessor(pl.LightningDataModule):
         
         return max_length
 
-    def generate_hierarchy(self):
+    def generate_hierarchy_segment(self):
         segmented_parent_child = {}
 
-        with open(self.hierarchy, "r") as tree:
+        with open(self.hierarchy_tree, "r") as tree:
             for path in tree:
                 nodes = path[:-1].lower().split(" > ")
 
@@ -101,7 +101,7 @@ class Preprocessor(pl.LightningDataModule):
         labels_idx = dataset['leaf'].unique().tolist()
         dataset['label_idx'] = dataset['leaf'].map(lambda x: labels_idx.index(x))
 
-        segmented_parent_child = self.generate_hierarchy()
+        segmented_parent_child = self.generate_hierarchy_segment()
         parents_idx = {parent: index for index, parent in enumerate(segmented_parent_child.keys())}
         
         segmented_by_hierarchy = [[] for i in range(len(parents_idx))]
