@@ -6,5 +6,5 @@ Repository for all scraping results and also the scraping utils for web scraping
 2. %cd productcategories_hierarchicalclass_classification
 3. !git lfs pull
 4. !pip install -r requirements.txt
-5. !python main.py --model={model} --flat={flat} --hierarchy={hierarchy}
-Note:\nthere is chooses option for run main.py are:\nmodel = 'bert', 'bert-cnn', 'bert-bilstm', 'bert-lstm'\nflat = True, False\nhierarchy = True, False
+5. !python main.py --model={model} --flat={flat} --hierarchy={hierarchy}</br>
+Note:</br>there is chooses option for run main.py are:</br>model = 'bert', 'bert-cnn', 'bert-bilstm', 'bert-lstm'</br>flat = True, False</br>hierarchy = True, False
