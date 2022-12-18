@@ -82,12 +82,12 @@ class Trainer:
     def __init__(self, model_path, module, num_classes, flat, hierarchy):
         if(flat):
             model = Flat_Trainer(lr=2e-5, num_classes=num_classes, model_path=model_path)
-            self.flat_fine_tune(model=model, module=module, model_path=model_path)
+            self.flat_fine_tuning(model=model, module=module, model_path=model_path)
 
         if(hierarchy):
-            self.hierarchical_fine_tune()
+            self.hierarchical_fine_tuning()
 
-    def flat_fine_tune(self, model, module, model_path):
+    def flat_fine_tuning(self, model, module, model_path):
         pl.seed_everything(42, workers=True)
         
         checkpoint_callback = ModelCheckpoint(dirpath=f'./checkpoints/flat_{model_path}_result', monitor='val_loss')
@@ -99,11 +99,11 @@ class Trainer:
             max_epochs=30,
             default_root_dir=f'./checkpoints/flat_{model_path}_result',
             callbacks = [checkpoint_callback, early_stop_callback],
-            # deterministic=True,
+            deterministic=True,
             logger=logger)
 
         trainer.fit(model=model, datamodule=module)
         trainer.test(model=model, datamodule=module, ckpt_path='best')
 
-    def hierarchical_fine_tune(self):
+    def hierarchical_fine_tuning(self):
         pass
