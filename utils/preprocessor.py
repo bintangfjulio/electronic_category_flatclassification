@@ -104,8 +104,8 @@ class Preprocessor(pl.LightningDataModule):
         segmented_parent_child = self.generate_hierarchy_segment()
         parents_idx = {parent: index for index, parent in enumerate(segmented_parent_child.keys())}
         
-        segmented_by_hierarchy = [[] for i in range(len(parents_idx))]
         flat_input_ids, flat_target = [], []
+        segmented_by_hierarchy = [[] for i in range(len(parents_idx))]
 
         max_length = self.get_max_length(dataset)
 
