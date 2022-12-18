@@ -5,5 +5,5 @@ Repository for all scraping results and also the scraping utils for web scraping
 1. !git clone https://github.com/bintangfjulio/productcategories_hierarchicalclass_classification.git
 2. %cd productcategories_hierarchicalclass_classification
 3. !pip install -r requirements.txt
-4. !python main.py --model=option choosed --flat=option choosed --hierarchy=option choosed
-</br>There is chooses option for run main.py are:</br>1. model: 'bert', 'bert-cnn', 'bert-bilstm', 'bert-lstm'</br>2. flat: True, False</br>3. hierarchy: True, False
+4. !python main.py --model=option choosed --method=option choosed
+</br>There is chooses option for run main.py are:</br>1. model: 'bert', 'bert-cnn', 'bert-bilstm', 'bert-lstm'</br>2. method: flat, hierarchy
