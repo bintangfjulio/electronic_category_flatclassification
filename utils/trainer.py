@@ -40,8 +40,8 @@ class Flat_Trainer(pl.LightningModule):
         loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
 
         preds = output.argmax(1).cpu()
-        flat_target = flat_target.argmax(1).cpu()
-        report = classification_report(flat_target, preds, output_dict=True, zero_division=0)
+        target = flat_target.argmax(1).cpu()
+        report = classification_report(target, preds, output_dict=True, zero_division=0)
 
         self.log_dict({'train_loss': loss, 'train_accuracy': report["accuracy"]}, prog_bar=True, on_epoch=True)
 
@@ -54,8 +54,8 @@ class Flat_Trainer(pl.LightningModule):
         loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
 
         preds = output.argmax(1).cpu()
-        flat_target = flat_target.argmax(1).cpu()
-        report = classification_report(flat_target, preds, output_dict=True, zero_division=0)
+        target = flat_target.argmax(1).cpu()
+        report = classification_report(target, preds, output_dict=True, zero_division=0)
 
         self.log_dict({'val_loss': loss, 'val_accuracy': report["accuracy"]}, prog_bar=True, on_epoch=True)
 
@@ -68,8 +68,8 @@ class Flat_Trainer(pl.LightningModule):
         loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
 
         preds = output.argmax(1).cpu()
-        flat_target = flat_target.argmax(1).cpu()
-        report = classification_report(flat_target, preds, output_dict=True, zero_division=0)
+        target = flat_target.argmax(1).cpu()
+        report = classification_report(target, preds, output_dict=True, zero_division=0)
 
         self.log_dict({'test_loss': loss, 'test_accuracy': report["accuracy"]}, prog_bar=True, on_epoch=True)
 
