@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import argparse
+import zipfile
 
 from utils.tree_generator import Tree_Generator
 from utils.preprocessor import Preprocessor
@@ -11,13 +12,19 @@ if __name__ == "__main__":
     parser.add_argument('--model', choices=['bert', 'bert-cnn', 'bert-bilstm', 'bert-lstm'], required=True, help='Model choices to fine tune')
     parser.add_argument('--method', choices=['flat', 'hierarchy'], required=True, help='Fine tuning method choices')
     
+    if os.path.exists('datasets/product_tokopedia.zip'):
+        with zipfile.ZipFile('datasets/product_tokopedia.zip', 'r') as package:
+            package.extractall('datasets')
+            
+        os.remove('datasets/product_tokopedia.zip')
+    
     args = parser.parse_args()
     config = vars(args)
     
     model_path = config['model']
     method = config['method']
 
-    dataset = pd.read_csv('datasets/electronic_product_tokopedia.csv')
+    dataset = pd.read_csv('datasets/product_tokopedia.csv')
     num_classes = len(dataset['leaf'].drop_duplicates().values.tolist())
     hierarchy_tree = 'datasets/labels_hierarchy.tree'
 
