@@ -114,41 +114,40 @@ class Preprocessor(pl.LightningDataModule):
 
             token = self.tokenizer(text=name, max_length=max_length, padding="max_length", truncation=True)  
 
-#             path = data[3]
-#             nodes = path.lower().split(" > ")
+            path = data[3]
+            nodes = path.lower().split(" > ")
 
-#             for depth, node in enumerate(nodes[:-1]):
-#                 child = nodes[depth + 1]
-#                 child_of_parent = list(segmented_parent_child[node])
-#                 child_idx = child_of_parent.index(child)
+            for depth, node in enumerate(nodes[:-1]):
+                child = nodes[depth + 1]
+                child_of_parent = list(segmented_parent_child[node])
+                child_idx = child_of_parent.index(child)
 
-#                 hierarchical_binary = [0] * len(child_of_parent)
-#                 hierarchical_binary[child_idx] = 1
+                hierarchical_binary = [0] * len(child_of_parent)
+                hierarchical_binary[child_idx] = 1
                 
-#                 parent_idx = parents_idx[node]
+                parent_idx = parents_idx[node]
 
-#                 if 'input_ids' not in segmented_by_hierarchy[parent_idx]:
-#                     segmented_by_hierarchy[parent_idx] = {'input_ids': [], 'hierarchical_target': []}
+                if 'input_ids' not in segmented_by_hierarchy[parent_idx]:
+                    segmented_by_hierarchy[parent_idx] = {'input_ids': [], 'hierarchical_target': []}
                 
-#                 segmented_by_hierarchy[parent_idx]['input_ids'].append(token['input_ids'])
-#                 segmented_by_hierarchy[parent_idx]['hierarchical_target'].append(hierarchical_binary)
+                segmented_by_hierarchy[parent_idx]['input_ids'].append(token['input_ids'])
+                segmented_by_hierarchy[parent_idx]['hierarchical_target'].append(hierarchical_binary)
             
             flat_input_ids.append(token['input_ids'])
             flat_target.append(flat_binary)
 
-#         hierarchical_dataset = []
+        hierarchical_dataset = []
 
-#         for data in segmented_by_hierarchy:
-#             hierarchical_input_ids = data['input_ids']
-#             hierarchical_target = data['hierarchical_target']
+        for data in segmented_by_hierarchy:
+            hierarchical_input_ids = data['input_ids']
+            hierarchical_target = data['hierarchical_target']
             
-#             train_set, valid_set, test_set = self.data_splitting(hierarchical_input_ids, hierarchical_target)
-#             hierarchical_dataset.append([train_set, valid_set, test_set])
+            train_set, valid_set, test_set = self.data_splitting(hierarchical_input_ids, hierarchical_target)
+            hierarchical_dataset.append([train_set, valid_set, test_set])
 
-#         with open("datasets/hierarchical_dataset.pkl", "wb") as hierarchical_preprocessed:
-#             pickle.dump(hierarchical_dataset, hierarchical_preprocessed, protocol=pickle.HIGHEST_PROTOCOL)
+        with open("datasets/hierarchical_dataset.pkl", "wb") as hierarchical_preprocessed:
+            pickle.dump(hierarchical_dataset, hierarchical_preprocessed, protocol=pickle.HIGHEST_PROTOCOL)
 
-        print("delete me")
         train_set, valid_set, test_set = self.data_splitting(flat_input_ids, flat_target)
         torch.save(train_set, "datasets/train_set.pt")
         torch.save(valid_set, "datasets/valid_set.pt")
@@ -156,22 +155,19 @@ class Preprocessor(pl.LightningDataModule):
 
         return train_set, valid_set, test_set
 
-    def data_cleaning(self, string):
-        string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)
-        string = re.sub(r"\'s", " \'s", string)
-        string = re.sub(r"\'ve", " \'ve", string)
-        string = re.sub(r"n\'t", " n\'t", string)
-        string = re.sub(r"\'re", " \'re", string)
-        string = re.sub(r"\'d", " \'d", string)
-        string = re.sub(r"\'ll", " \'ll", string)
-        string = re.sub(r",", " , ", string)
-        string = re.sub(r"!", " ! ", string)
-        string = re.sub(r"\(", " \( ", string)
-        string = re.sub(r"\)", " \) ", string)
-        string = re.sub(r"\?", " \? ", string)
-        string = re.sub(r"\s{2,}", " ", string)
+    def data_cleaning(self, text):
+        text = text.lower()
+        text = re.sub('\n', ' ', text)
+        text = re.sub(r'@\w+', '', text)
+        text = re.sub(r'http\S+', '', text)
+        text = text.translate(str.maketrans('', '', string.punctuation))
+        text = re.sub("'", '', text)
+        text = re.sub(r'\d+', '', text)
+        text = ' '.join([word for word in text.split() if word not in self.stop_words])
+        text = text.strip()
+        text = self.stemmer.stem(text)
 
-        return string.strip().lower()
+        return text
 
     def data_splitting(self, input_ids, target):
         input_ids = torch.tensor(input_ids)
