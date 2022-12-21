@@ -157,7 +157,20 @@ class Preprocessor(pl.LightningDataModule):
 
     def data_cleaning(self, text):
         text = text.lower()
-        text = re.sub('\n', ' ', text)
+        text = re.sub(r"[^A-Za-z0-9(),!?\'\-`]", " ", text)
+        text = re.sub(r"\'s", " \'s", text)
+        text = re.sub(r"\'ve", " \'ve", text)
+        text = re.sub(r"n\'t", " n\'t", text)
+        text = re.sub('\n', ' ', text)  
+        text = re.sub(r"\'re", " \'re", text)
+        text = re.sub(r"\'d", " \'d", text)
+        text = re.sub(r"\'ll", " \'ll", text)
+        text = re.sub(r",", " , ", text)
+        text = re.sub(r"!", " ! ", text)
+        text = re.sub(r"\(", " \( ", text)
+        text = re.sub(r"\)", " \) ", text)
+        text = re.sub(r"\?", " \? ", text)
+        text = re.sub(r"\s{2,}", " ", text)
         text = re.sub(r'@\w+', '', text)
         text = re.sub(r'http\S+', '', text)
         text = text.translate(str.maketrans('', '', string.punctuation))
@@ -168,7 +181,7 @@ class Preprocessor(pl.LightningDataModule):
         text = self.stemmer.stem(text)
 
         return text
-
+    
     def data_splitting(self, input_ids, target):
         input_ids = torch.tensor(input_ids)
         target = torch.tensor(target)
