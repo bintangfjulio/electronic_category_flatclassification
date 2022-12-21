@@ -11,7 +11,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', choices=['bert', 'bert-cnn', 'bert-bilstm', 'bert-lstm'], required=True, help='Model choices to fine tune')
     parser.add_argument('--method', choices=['flat', 'hierarchy'], required=True, help='Fine tuning method choices')
-      
+
     args = parser.parse_args()
     config = vars(args)
     

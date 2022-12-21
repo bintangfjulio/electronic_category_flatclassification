@@ -5,10 +5,10 @@ import pytorch_lightning as pl
 from transformers import BertModel
 
 class BERT_LSTM(pl.LightningModule):
-    def __init__(self, num_classes, bidirectional, dropout=0.1, embedding_size=768, hidden_size=768, num_layers=2):
+    def __init__(self, num_classes, bidirectional, dropout=0.1, input_size=768, hidden_size=768, num_layers=2):
         super(BERT_LSTM, self).__init__()
         self.bert = BertModel.from_pretrained('indolem/indobert-base-uncased')  
-        self.lstm = nn.LSTM(embedding_size, hidden_size, num_layers, bidirectional=bidirectional, batch_first=True)
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, bidirectional=bidirectional, batch_first=True)
         self.dropout = nn.Dropout(dropout) 
         self.bidirectional = bidirectional
         

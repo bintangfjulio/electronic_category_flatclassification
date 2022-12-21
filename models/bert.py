@@ -4,10 +4,10 @@ import pytorch_lightning as pl
 from transformers import BertModel
 
 class BERT(pl.LightningModule):
-    def __init__(self, num_classes, dropout=0.1, embedding_size=768, hidden_size=768):
+    def __init__(self, num_classes, dropout=0.1, input_size=768, hidden_size=768):
         super(BERT, self).__init__()
         self.bert = BertModel.from_pretrained('indolem/indobert-base-uncased')
-        self.linear_layer = nn.Linear(embedding_size, hidden_size)
+        self.linear_layer = nn.Linear(input_size, hidden_size)
         self.fully_connected = nn.Linear(hidden_size, num_classes)
         self.dropout = nn.Dropout(dropout)   
         self.tanh = nn.Tanh()

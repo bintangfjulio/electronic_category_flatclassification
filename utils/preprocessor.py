@@ -75,7 +75,6 @@ class Preprocessor(pl.LightningDataModule):
 
         token_length = [len(token) for token in sentences_token]
         max_length = max(token_length) + extra_space
-        print("Max Length:", max_length)
         
         return max_length
 
@@ -102,11 +101,10 @@ class Preprocessor(pl.LightningDataModule):
         dataset['label_idx'] = dataset['leaf'].map(lambda x: labels_idx.index(x))
 
         segmented_parent_child = self.generate_hierarchy_segment()
-        parents_idx = {parent: index for index, parent in enumerate(segmented_parent_child.keys())}
-        
-        flat_input_ids, flat_target = [], []
+        parents_idx = {parent: index for index, parent in enumerate(segmented_parent_child.keys())}        
         segmented_by_hierarchy = [[] for i in range(len(parents_idx))]
 
+        flat_input_ids, flat_target = [], []
         max_length = self.get_max_length(dataset)
 
         for data in dataset.values.tolist():
