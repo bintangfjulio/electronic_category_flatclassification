@@ -5,4 +5,4 @@ Repository for all scraping results and also the scraping utils for web scraping
 2. %cd hierarchical_productcategories_classification
 3. !pip install -r requirements.txt
 4. !python main.py --model=option choosed --method=option choosed
-</br>There are options model & method for run main.py:</br>1. model: bert, bert-cnn, bert-bilstm, bert-lstm</br>2. method: flat, hierarchy
+</br>There are model & method options for run main.py:</br>1. model: bert, bert-cnn, bert-bilstm, bert-lstm</br>2. method: flat, hierarchy
