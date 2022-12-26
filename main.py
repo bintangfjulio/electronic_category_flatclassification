@@ -18,8 +18,8 @@ if __name__ == "__main__":
     model_path = config['model']
     method = config['method']
     
-    if os.path.exists('datasets/product_tokopedia.csv.zip'):
-        with zipfile.ZipFile('datasets/product_tokopedia.csv.zip', 'r') as package:
+    if os.path.exists('datasets/product_tokopedia.zip'):
+        with zipfile.ZipFile('datasets/product_tokopedia.zip', 'r') as package:
             package.extractall('datasets')
             
         os.remove('datasets/product_tokopedia.csv.zip')
