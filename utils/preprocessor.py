@@ -154,7 +154,7 @@ class Preprocessor(pl.LightningDataModule):
         torch.save(test_set, "datasets/test_set.pt")
 
         return train_set, valid_set, test_set
-
+    
     def data_cleaning(self, text):
         text = text.lower()
         text = re.sub(r"[^A-Za-z0-9(),!?\'\-`]", " ", text)
@@ -164,10 +164,8 @@ class Preprocessor(pl.LightningDataModule):
         text = text.translate(str.maketrans('', '', string.punctuation))
         text = re.sub("'", '', text)
         text = re.sub(r'\d+', '', text)
-        text = re.sub(r"\s{2,}", " ", text)
-        text = ' '.join([word for word in text.split() if word not in self.stop_words])
-        text = text.strip()
-        text = self.stemmer.stem(text)
+        text = ' '.join([word for word in text.split() if word not in self.stop_words and len(word) > 1])
+        text = self.stemmer.stem(text.strip())
 
         return text
     
