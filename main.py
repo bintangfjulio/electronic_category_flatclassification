@@ -22,7 +22,7 @@ if __name__ == "__main__":
         with zipfile.ZipFile('datasets/product_tokopedia.zip', 'r') as package:
             package.extractall('datasets')
             
-        os.remove('datasets/product_tokopedia.csv.zip')
+        os.remove('datasets/product_tokopedia.zip')
 
     dataset = pd.read_csv('datasets/product_tokopedia.csv')
     num_classes = len(dataset['leaf'].drop_duplicates().values.tolist())
