@@ -17,8 +17,6 @@ class Flat_Trainer(pl.LightningModule):
         else:
             self.criterion = nn.BCEWithLogitsLoss()
         
-        self.lr = lr
-        
         if model_path == 'bert':
             self.model = BERT(num_classes=num_classes)
         elif model_path == 'bert-cnn':
@@ -27,6 +25,8 @@ class Flat_Trainer(pl.LightningModule):
             self.model = BERT_LSTM(num_classes=num_classes, bidirectional=True)
         elif model_path == 'bert-lstm':
             self.model = BERT_LSTM(num_classes=num_classes, bidirectional=False)
+            
+        self.lr = lr
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
