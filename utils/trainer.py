@@ -16,7 +16,6 @@ class Flat_Trainer(pl.LightningModule):
             self.criterion = nn.BCELoss()
         else:
             self.criterion = nn.BCEWithLogitsLoss()
-        
         if model_path == 'bert':
             self.model = BERT(num_classes=num_classes)
         elif model_path == 'bert-cnn':
