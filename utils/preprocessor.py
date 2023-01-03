@@ -97,6 +97,8 @@ class Preprocessor(pl.LightningDataModule):
         return segmented_parent_child
 
     def preprocessing_data(self, dataset): 
+        dataset = dataset.dropna()
+        
         labels_idx = dataset['leaf'].unique().tolist()
         dataset['label_idx'] = dataset['leaf'].map(lambda x: labels_idx.index(x))
 
