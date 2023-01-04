@@ -110,7 +110,7 @@ class Preprocessor(pl.LightningDataModule):
         max_length = self.get_max_length(dataset)
 
         for data in dataset.values.tolist():
-            name = self.data_cleaning(str(data[0])) 
+            name = self.text_cleaning(str(data[0])) 
             flat_binary = [0] * self.num_classes
             flat_binary[int(data[4])] = 1
 
@@ -144,20 +144,20 @@ class Preprocessor(pl.LightningDataModule):
             hierarchical_input_ids = data['input_ids']
             hierarchical_target = data['hierarchical_target']
             
-            train_set, valid_set, test_set = self.data_splitting(hierarchical_input_ids, hierarchical_target)
+            train_set, valid_set, test_set = self.dataset_splitting(hierarchical_input_ids, hierarchical_target)
             hierarchical_dataset.append([train_set, valid_set, test_set])
 
         with open("datasets/hierarchical_dataset.pkl", "wb") as hierarchical_preprocessed:
             pickle.dump(hierarchical_dataset, hierarchical_preprocessed, protocol=pickle.HIGHEST_PROTOCOL)
 
-        train_set, valid_set, test_set = self.data_splitting(flat_input_ids, flat_target)
+        train_set, valid_set, test_set = self.dataset_splitting(flat_input_ids, flat_target)
         torch.save(train_set, "datasets/train_set.pt")
         torch.save(valid_set, "datasets/valid_set.pt")
         torch.save(test_set, "datasets/test_set.pt")
 
         return train_set, valid_set, test_set
     
-    def data_cleaning(self, text):
+    def text_cleaning(self, text):
         text = text.lower()
         text = re.sub(r"[^A-Za-z0-9(),!?\'\-`]", " ", text)
         text = re.sub('\n', ' ', text)
@@ -171,7 +171,7 @@ class Preprocessor(pl.LightningDataModule):
 
         return text
     
-    def data_splitting(self, input_ids, target):
+    def dataset_splitting(self, input_ids, target):
         input_ids = torch.tensor(input_ids)
         target = torch.tensor(target)
         
