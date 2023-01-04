@@ -15,9 +15,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = vars(args)
     
-    model_path = config['model']
-    method = config['method']
-    
     if os.path.exists('datasets/product_tokopedia.zip'):
         with zipfile.ZipFile('datasets/product_tokopedia.zip', 'r') as package:
             package.extractall('datasets')
@@ -32,4 +29,4 @@ if __name__ == "__main__":
         Tree_Generator(dataset=dataset)
 
     module = Preprocessor(batch_size=32, dataset=dataset, num_classes=num_classes, hierarchy_tree=hierarchy_tree) 
-    Trainer(model_path=model_path, module=module, num_classes=num_classes, method=method)
+    Trainer(model_path=config['model'], module=module, num_classes=num_classes, method=config['method'])
