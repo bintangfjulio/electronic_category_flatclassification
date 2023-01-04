@@ -80,19 +80,14 @@ class Hierarchical_Trainer:
 class Trainer:
     def __init__(self, model_path, module, num_classes, method):
         if method == 'flat':
+            pl.seed_everything(42, workers=True)
+            
             model = Flat_Trainer(lr=2e-5, num_classes=num_classes, model_path=model_path)
-            self.flat_fine_tuning(model=model, module=module, model_path=model_path)
-        elif method == 'hierarchy':
-            self.hierarchical_fine_tuning()
+            checkpoint_callback = ModelCheckpoint(dirpath=f'./checkpoints/flat_{model_path}_result', monitor='val_loss')
+            logger = TensorBoardLogger('logs', name=f'flat_{model_path}_result')
+            early_stop_callback = EarlyStopping(monitor='val_loss', min_delta=0.00, check_on_train_epoch_end=1, patience=3)
 
-    def flat_fine_tuning(self, model, module, model_path):
-        pl.seed_everything(42, workers=True)
-        
-        checkpoint_callback = ModelCheckpoint(dirpath=f'./checkpoints/flat_{model_path}_result', monitor='val_loss')
-        logger = TensorBoardLogger('logs', name=f'flat_{model_path}_result')
-        early_stop_callback = EarlyStopping(monitor='val_loss', min_delta=0.00, check_on_train_epoch_end=1, patience=3)
-
-        trainer = pl.Trainer(
+            trainer = pl.Trainer(
             accelerator='gpu',
             max_epochs=30,
             default_root_dir=f'./checkpoints/flat_{model_path}_result',
@@ -100,8 +95,8 @@ class Trainer:
             deterministic=True,
             logger=logger)
 
-        trainer.fit(model=model, datamodule=module)
-        trainer.test(model=model, datamodule=module, ckpt_path='best')
-
-    def hierarchical_fine_tuning(self):
-        pass
+            trainer.fit(model=model, datamodule=module)
+            trainer.test(model=model, datamodule=module, ckpt_path='best')
+         
+        elif method == 'hierarchy':
+            pass
