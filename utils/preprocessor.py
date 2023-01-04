@@ -66,7 +66,7 @@ class Preprocessor(pl.LightningDataModule):
 
         return train_set, valid_set, test_set
 
-    def get_max_length(self, dataset, extra_space=10):
+    def get_max_length(self, dataset, extra_length=10):
         sentences_token = []
         
         for data in dataset.values.tolist():
@@ -74,7 +74,7 @@ class Preprocessor(pl.LightningDataModule):
             sentences_token.append(data)
 
         token_length = [len(token) for token in sentences_token]
-        max_length = max(token_length) + extra_space
+        max_length = max(token_length) + extra_length
         
         return max_length
 
