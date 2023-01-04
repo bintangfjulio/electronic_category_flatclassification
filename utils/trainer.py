@@ -12,6 +12,7 @@ from models.bert_lstm import BERT_LSTM
 class Flat_Trainer(pl.LightningModule):
     def __init__(self, lr, model_path, num_classes):
         super(Flat_Trainer, self).__init__()     
+        self.lr = lr
         if model_path == 'bert-cnn':
             self.criterion = nn.BCELoss()
         else:
@@ -24,8 +25,6 @@ class Flat_Trainer(pl.LightningModule):
             self.model = BERT_LSTM(num_classes=num_classes, bidirectional=True)
         elif model_path == 'bert-lstm':
             self.model = BERT_LSTM(num_classes=num_classes, bidirectional=False)
-            
-        self.lr = lr
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
