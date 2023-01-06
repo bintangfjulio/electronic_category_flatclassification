@@ -4,7 +4,7 @@ import torch.nn as nn
 
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
-from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score
 from sklearn.metrics import matthews_corrcoef
 from models.bert import BERT
 from models.bert_cnn import BERT_CNN
@@ -13,11 +13,11 @@ from models.bert_lstm import BERT_LSTM
 class Flat_Fine_Tuning(pl.LightningModule):
     def __init__(self, lr, model_path, num_classes):
         super(Flat_Fine_Tuning, self).__init__()     
-        self.lr = lr
         if model_path == 'bert-cnn':
             self.criterion = nn.BCELoss()
         else:
             self.criterion = nn.BCEWithLogitsLoss()
+            
         if model_path == 'bert':
             self.model = BERT(num_classes=num_classes)
         elif model_path == 'bert-cnn':
@@ -26,6 +26,8 @@ class Flat_Fine_Tuning(pl.LightningModule):
             self.model = BERT_LSTM(num_classes=num_classes, bidirectional=True)
         elif model_path == 'bert-lstm':
             self.model = BERT_LSTM(num_classes=num_classes, bidirectional=False)
+        
+        self.lr = lr
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
@@ -38,12 +40,12 @@ class Flat_Fine_Tuning(pl.LightningModule):
         output = self.model(input_ids=flat_input_ids)
         loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
 
-        preds = output.argmax(1).cpu()
+        pred = output.argmax(1).cpu()
         target = flat_target.argmax(1).cpu()
-        report = classification_report(target, preds, output_dict=True, zero_division=0)
-        mcc = matthews_corrcoef(target, preds)
+        accuracy = accuracy_score(target, pred)
+        mcc = matthews_corrcoef(target, pred)
 
-        self.log_dict({'train_loss': loss, 'train_accuracy': report["accuracy"], 'train_mcc': mcc}, prog_bar=True, on_epoch=True)
+        self.log_dict({'train_loss': loss, 'train_accuracy': accuracy, 'train_mcc': mcc}, prog_bar=True, on_epoch=True)
 
         return loss
 
@@ -53,12 +55,12 @@ class Flat_Fine_Tuning(pl.LightningModule):
         output = self.model(input_ids=flat_input_ids)
         loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
 
-        preds = output.argmax(1).cpu()
+        pred = output.argmax(1).cpu()
         target = flat_target.argmax(1).cpu()
-        report = classification_report(target, preds, output_dict=True, zero_division=0)
-        mcc = matthews_corrcoef(target, preds)
+        accuracy = accuracy_score(target, pred)
+        mcc = matthews_corrcoef(target, pred)
 
-        self.log_dict({'val_loss': loss, 'val_accuracy': report["accuracy"], 'val_mcc': mcc}, prog_bar=True, on_epoch=True)
+        self.log_dict({'val_loss': loss, 'val_accuracy': accuracy, 'val_mcc': mcc}, prog_bar=True, on_epoch=True)
 
         return loss
 
@@ -68,12 +70,12 @@ class Flat_Fine_Tuning(pl.LightningModule):
         output = self.model(input_ids=flat_input_ids)
         loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
 
-        preds = output.argmax(1).cpu()
+        pred = output.argmax(1).cpu()
         target = flat_target.argmax(1).cpu()
-        report = classification_report(target, preds, output_dict=True, zero_division=0)
-        mcc = matthews_corrcoef(target, preds)
+        accuracy = accuracy_score(target, pred)
+        mcc = matthews_corrcoef(target, pred)
 
-        self.log_dict({'test_loss': loss, 'test_accuracy': report["accuracy"], 'test_mcc': mcc}, prog_bar=True, on_epoch=True)
+        self.log_dict({'test_loss': loss, 'test_accuracy': accuracy, 'test_mcc': mcc}, prog_bar=True, on_epoch=True)
 
         return loss
 
