@@ -86,13 +86,12 @@ class Trainer:
             logger = TensorBoardLogger('logs', name=f'flat_{model_path}_result')
             early_stop_callback = EarlyStopping(monitor='val_loss', min_delta=0.00, check_on_train_epoch_end=1, patience=3)
 
-            trainer = pl.Trainer(
-            accelerator='gpu',
-            max_epochs=30,
-            default_root_dir=f'./checkpoints/flat_{model_path}_result',
-            callbacks = [checkpoint_callback, early_stop_callback],
-            deterministic=True,
-            logger=logger)
+            trainer = pl.Trainer(accelerator='gpu',
+                                max_epochs=30,
+                                default_root_dir=f'./checkpoints/flat_{model_path}_result',
+                                callbacks = [checkpoint_callback, early_stop_callback],
+                                deterministic=True,
+                                logger=logger)
 
             trainer.fit(model=model, datamodule=module)
             trainer.test(model=model, datamodule=module, ckpt_path='best')
