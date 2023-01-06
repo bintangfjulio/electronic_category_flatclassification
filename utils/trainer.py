@@ -10,9 +10,9 @@ from models.bert import BERT
 from models.bert_cnn import BERT_CNN
 from models.bert_lstm import BERT_LSTM
 
-class Flat_Fine_Tuning(pl.LightningModule):
+class Flat_FineTuning(pl.LightningModule):
     def __init__(self, lr, model_path, num_classes):
-        super(Flat_Fine_Tuning, self).__init__()     
+        super(Flat_FineTuning, self).__init__()     
         if model_path == 'bert-cnn':
             self.criterion = nn.BCELoss()
         else:
@@ -79,7 +79,7 @@ class Flat_Fine_Tuning(pl.LightningModule):
 
         return loss
 
-class Hierarchical_Fine_Tuning:
+class Hierarchical_FineTuning:
     pass
 
 class Trainer:
@@ -87,7 +87,7 @@ class Trainer:
         if method == 'flat':
             pl.seed_everything(42, workers=True)
             
-            model = Flat_Fine_Tuning(lr=2e-5, num_classes=num_classes, model_path=model_path)
+            model = Flat_FineTuning(lr=2e-5, num_classes=num_classes, model_path=model_path)
             checkpoint_callback = ModelCheckpoint(dirpath=f'./checkpoints/flat_{model_path}_result', monitor='val_loss')
             logger = TensorBoardLogger('logs', name=f'flat_{model_path}_result')
             early_stop_callback = EarlyStopping(monitor='val_loss', min_delta=0.00, check_on_train_epoch_end=1, patience=3)
