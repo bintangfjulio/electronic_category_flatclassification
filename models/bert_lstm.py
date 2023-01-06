@@ -24,9 +24,9 @@ class BERT_LSTM(pl.LightningModule):
         _, (lstm_output_layer, _) = self.lstm(bert_output_layer)
         
         if self.bidirectional:
-            output_layer_LEFT = lstm_output_layer[-2]
-            output_layer_RIGHT = lstm_output_layer[-1]
-            lstm_output = torch.cat([output_layer_LEFT, output_layer_RIGHT], dim=-1)   
+            sequential_direction_backward = lstm_output_layer[-2]
+            sequential_direction_forward = lstm_output_layer[-1]
+            lstm_output = torch.cat([sequential_direction_backward, sequential_direction_forward], dim=-1)   
         else:
             lstm_output = lstm_output_layer[-1]
 
