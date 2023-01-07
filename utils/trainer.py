@@ -12,12 +12,7 @@ from models.bert_lstm import BERT_LSTM
 
 class Flat_FineTuning(pl.LightningModule):
     def __init__(self, lr, model_path, num_classes):
-        super(Flat_FineTuning, self).__init__()     
-        if model_path == 'bert-cnn':
-            self.criterion = nn.BCELoss()
-        else:
-            self.criterion = nn.BCEWithLogitsLoss()
-            
+        super(Flat_FineTuning, self).__init__()                 
         if model_path == 'bert':
             self.model = BERT(num_classes=num_classes)
         elif model_path == 'bert-cnn':
@@ -28,6 +23,7 @@ class Flat_FineTuning(pl.LightningModule):
             self.model = BERT_LSTM(num_classes=num_classes, bidirectional=False)
         
         self.lr = lr
+        self.criterion = nn.BCELoss()
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
