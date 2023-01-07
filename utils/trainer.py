@@ -36,10 +36,10 @@ class Flat_FineTuning(pl.LightningModule):
         probabilities = self.model(input_ids=input_ids)
         loss = self.criterion(probabilities.cpu(), target=target.float().cpu())
 
-        max_probability_dimension = probabilities.argmax(1).cpu()
-        max_target_dimension = target.argmax(1).cpu()
-        accuracy = accuracy_score(max_target_dimension, max_probability_dimension)
-        mcc = matthews_corrcoef(max_target_dimension, max_probability_dimension)
+        max_probability_idx = probabilities.argmax(1).cpu()
+        max_target_idx = target.argmax(1).cpu()
+        accuracy = accuracy_score(max_target_idx, max_probability_idx)
+        mcc = matthews_corrcoef(max_target_idx, max_probability_idx)
 
         self.log_dict({'train_loss': loss, 'train_accuracy': accuracy, 'train_mcc': mcc}, prog_bar=True, on_epoch=True)
 
@@ -51,10 +51,10 @@ class Flat_FineTuning(pl.LightningModule):
         probabilities = self.model(input_ids=input_ids)
         loss = self.criterion(probabilities.cpu(), target=target.float().cpu())
 
-        max_probability_dimension = probabilities.argmax(1).cpu()
-        max_target_dimension = target.argmax(1).cpu()
-        accuracy = accuracy_score(max_target_dimension, max_probability_dimension)
-        mcc = matthews_corrcoef(max_target_dimension, max_probability_dimension)
+        max_probability_idx = probabilities.argmax(1).cpu()
+        max_target_idx = target.argmax(1).cpu()
+        accuracy = accuracy_score(max_target_idx, max_probability_idx)
+        mcc = matthews_corrcoef(max_target_idx, max_probability_idx)
 
         self.log_dict({'val_loss': loss, 'val_accuracy': accuracy, 'val_mcc': mcc}, prog_bar=True, on_epoch=True)
 
@@ -66,10 +66,10 @@ class Flat_FineTuning(pl.LightningModule):
         probabilities = self.model(input_ids=input_ids)
         loss = self.criterion(probabilities.cpu(), target=target.float().cpu())
 
-        max_probability_dimension = probabilities.argmax(1).cpu()
-        max_target_dimension = target.argmax(1).cpu()
-        accuracy = accuracy_score(max_target_dimension, max_probability_dimension)
-        mcc = matthews_corrcoef(max_target_dimension, max_probability_dimension)
+        max_probability_idx = probabilities.argmax(1).cpu()
+        max_target_idx = target.argmax(1).cpu()
+        accuracy = accuracy_score(max_target_idx, max_probability_idx)
+        mcc = matthews_corrcoef(max_target_idx, max_probability_idx)
 
         self.log_dict({'test_loss': loss, 'test_accuracy': accuracy, 'test_mcc': mcc}, prog_bar=True, on_epoch=True)
 
