@@ -11,12 +11,14 @@ class BERT(pl.LightningModule):
         self.output_layer = nn.Linear(hidden_size, num_classes)
         self.dropout = nn.Dropout(dropout)   
         self.tanh = nn.Tanh()
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, input_ids):
         bert_output = self.pretrained_bert(input_ids=input_ids)
         bert_output_layer = bert_output[0]
         cls_token_state = bert_output_layer[:, 0]
         pooled_output =  self.tanh(self.hidden_layer(cls_token_state))
-        output = self.output_layer(self.dropout(pooled_output))
+        fully_connected_layer = self.output_layer(self.dropout(pooled_output))
+        logits = self.sigmoid(fully_connected_layer)
 
-        return output
+        return logits
