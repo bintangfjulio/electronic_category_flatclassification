@@ -37,9 +37,9 @@ class Flat_FineTuning(pl.LightningModule):
         loss = self.criterion(probabilities.cpu(), target=target.float().cpu())
 
         max_probability_idx = probabilities.argmax(1).cpu()
-        target_idx = target.argmax(1).cpu()
-        accuracy = accuracy_score(target_idx, max_probability_idx)
-        mcc = matthews_corrcoef(target_idx, max_probability_idx)
+        max_target_idx = target.argmax(1).cpu()
+        accuracy = accuracy_score(max_target_idx, max_probability_idx)
+        mcc = matthews_corrcoef(max_target_idx, max_probability_idx)
 
         self.log_dict({'train_loss': loss, 'train_accuracy': accuracy, 'train_mcc': mcc}, prog_bar=True, on_epoch=True)
 
