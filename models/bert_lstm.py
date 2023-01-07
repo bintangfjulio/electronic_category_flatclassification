@@ -30,6 +30,7 @@ class BERT_LSTM(pl.LightningModule):
         else:
             lstm_output = lstm_output_layer[-1]
 
-        output = self.output_layer(self.dropout(lstm_output))
+        fully_connected_layer = self.output_layer(self.dropout(lstm_output))
+        preds = self.sigmoid(fully_connected_layer)
         
-        return output
+        return preds
