@@ -52,9 +52,9 @@ class Flat_FineTuning(pl.LightningModule):
         loss = self.criterion(probabilities.cpu(), target=target.float().cpu())
 
         max_probability_idx = probabilities.argmax(1).cpu()
-        target_idx = target.argmax(1).cpu()
-        accuracy = accuracy_score(target_idx, max_probability_idx)
-        mcc = matthews_corrcoef(target_idx, max_probability_idx)
+        max_target_idx = target.argmax(1).cpu()
+        accuracy = accuracy_score(max_target_idx, max_probability_idx)
+        mcc = matthews_corrcoef(max_target_idx, max_probability_idx)
 
         self.log_dict({'val_loss': loss, 'val_accuracy': accuracy, 'val_mcc': mcc}, prog_bar=True, on_epoch=True)
 
@@ -67,9 +67,9 @@ class Flat_FineTuning(pl.LightningModule):
         loss = self.criterion(probabilities.cpu(), target=target.float().cpu())
 
         max_probability_idx = probabilities.argmax(1).cpu()
-        target_idx = target.argmax(1).cpu()
-        accuracy = accuracy_score(target_idx, max_probability_idx)
-        mcc = matthews_corrcoef(target_idx, max_probability_idx)
+        max_target_idx = target.argmax(1).cpu()
+        accuracy = accuracy_score(max_target_idx, max_probability_idx)
+        mcc = matthews_corrcoef(max_target_idx, max_probability_idx)
 
         self.log_dict({'test_loss': loss, 'test_accuracy': accuracy, 'test_mcc': mcc}, prog_bar=True, on_epoch=True)
 
