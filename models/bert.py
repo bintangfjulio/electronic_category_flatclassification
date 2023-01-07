@@ -8,9 +8,9 @@ class BERT(pl.LightningModule):
         super(BERT, self).__init__()
         self.pretrained_bert = BertModel.from_pretrained('indolem/indobert-base-uncased')
         self.hidden_layer = nn.Linear(input_size, hidden_size)
-        self.output_layer = nn.Linear(hidden_size, num_classes)
-        self.dropout = nn.Dropout(dropout)   
         self.tanh = nn.Tanh()
+        self.dropout = nn.Dropout(dropout) 
+        self.output_layer = nn.Linear(hidden_size, num_classes)  
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, input_ids):
