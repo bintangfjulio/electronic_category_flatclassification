@@ -4,8 +4,8 @@ import torch.nn as nn
 
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
-from torchmetrics.classification import BinaryMatthewsCorrCoef
-from torchmetrics.classification import BinaryAccuracy
+from torchmetrics.classification import MulticlassAccuracy
+from torchmetrics.classification import MulticlassMatthewsCorrCoef
 from models.bert import BERT
 from models.bert_cnn import BERT_CNN
 from models.bert_lstm import BERT_LSTM
@@ -24,8 +24,8 @@ class Flat_FineTuning(pl.LightningModule):
         
         self.lr = lr
         self.criterion = nn.BCELoss()
-        self.accuracy_metric = BinaryAccuracy()
-        self.mcc_metric = BinaryMatthewsCorrCoef()
+        self.accuracy_metric = MulticlassAccuracy(num_classes=num_classes)
+        self.mcc_metric = MulticlassMatthewsCorrCoef(num_classes=num_classes)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
