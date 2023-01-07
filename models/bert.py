@@ -16,8 +16,8 @@ class BERT(pl.LightningModule):
     def forward(self, input_ids):
         bert_output = self.pretrained_bert(input_ids=input_ids)
         bert_output_layer = bert_output[0]
-        cls_token_state = bert_output_layer[:, 0]
-        pooled_output =  self.tanh(self.hidden_layer(cls_token_state))
+        cls_hidden_state = bert_output_layer[:, 0]
+        pooled_output =  self.tanh(self.hidden_layer(cls_hidden_state))
         fully_connected_layer = self.output_layer(self.dropout(pooled_output))
         probabilities = self.sigmoid(fully_connected_layer)
 
