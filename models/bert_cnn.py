@@ -24,7 +24,7 @@ class BERT_CNN(pl.LightningModule):
         max_pooling_layer = [F.max_pool1d(filtered_features, filtered_features.size(2)).squeeze(2) for filtered_features in pooling_layer]  
 
         flatten_layer = torch.cat(max_pooling_layer, dim=1) 
-        output = self.output_layer(self.dropout(flatten_layer))
-        output = self.sigmoid(output)
-
-        return output
+        fully_connected_layer = self.output_layer(self.dropout(flatten_layer))
+        preds = self.sigmoid(fully_connected_layer)
+        
+        return preds
