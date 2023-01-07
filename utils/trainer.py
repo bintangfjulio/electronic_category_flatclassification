@@ -33,10 +33,10 @@ class Flat_FineTuning(pl.LightningModule):
     def training_step(self, train_batch, batch_idx):
         flat_input_ids, flat_target = train_batch
 
-        output = self.model(input_ids=flat_input_ids)
-        loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
+        preds = self.model(input_ids=flat_input_ids)
+        loss = self.criterion(preds.cpu(), target=flat_target.float().cpu())
 
-        pred = output.argmax(1).cpu()
+        pred = preds.argmax(1).cpu()
         target = flat_target.argmax(1).cpu()
         accuracy = accuracy_score(target, pred)
         mcc = matthews_corrcoef(target, pred)
@@ -46,12 +46,12 @@ class Flat_FineTuning(pl.LightningModule):
         return loss
 
     def validation_step(self, valid_batch, batch_idx):
-        flat_input_ids, flat_target = valid_batch
+        flat_input_ids, flat_target = train_batch
 
-        output = self.model(input_ids=flat_input_ids)
-        loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
+        preds = self.model(input_ids=flat_input_ids)
+        loss = self.criterion(preds.cpu(), target=flat_target.float().cpu())
 
-        pred = output.argmax(1).cpu()
+        pred = preds.argmax(1).cpu()
         target = flat_target.argmax(1).cpu()
         accuracy = accuracy_score(target, pred)
         mcc = matthews_corrcoef(target, pred)
@@ -61,12 +61,12 @@ class Flat_FineTuning(pl.LightningModule):
         return loss
 
     def test_step(self, test_batch, batch_idx):
-        flat_input_ids, flat_target = test_batch
+        flat_input_ids, flat_target = train_batch
 
-        output = self.model(input_ids=flat_input_ids)
-        loss = self.criterion(output.cpu(), target=flat_target.float().cpu())
+        preds = self.model(input_ids=flat_input_ids)
+        loss = self.criterion(preds.cpu(), target=flat_target.float().cpu())
 
-        pred = output.argmax(1).cpu()
+        pred = preds.argmax(1).cpu()
         target = flat_target.argmax(1).cpu()
         accuracy = accuracy_score(target, pred)
         mcc = matthews_corrcoef(target, pred)
