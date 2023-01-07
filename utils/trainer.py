@@ -37,7 +37,7 @@ class Flat_FineTuning(pl.LightningModule):
         loss = self.criterion(preds.cpu(), target=target.float().cpu())
 
         pred = preds.argmax(1).cpu()
-        target = targets.argmax(1).cpu()
+        target = target.argmax(1).cpu()
         accuracy = accuracy_score(target, pred)
         mcc = matthews_corrcoef(target, pred)
 
@@ -52,7 +52,7 @@ class Flat_FineTuning(pl.LightningModule):
         loss = self.criterion(preds.cpu(), target=target.float().cpu())
 
         pred = preds.argmax(1).cpu()
-        target = targets.argmax(1).cpu()
+        target = target.argmax(1).cpu()
         accuracy = accuracy_score(target, pred)
         mcc = matthews_corrcoef(target, pred)
 
@@ -67,7 +67,7 @@ class Flat_FineTuning(pl.LightningModule):
         loss = self.criterion(preds.cpu(), target=target.float().cpu())
 
         pred = preds.argmax(1).cpu()
-        target = targets.argmax(1).cpu()
+        target = target.argmax(1).cpu()
         accuracy = accuracy_score(target, pred)
         mcc = matthews_corrcoef(target, pred)
 
