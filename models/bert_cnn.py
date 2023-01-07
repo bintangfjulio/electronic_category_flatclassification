@@ -25,6 +25,6 @@ class BERT_CNN(pl.LightningModule):
 
         flatten_layer = torch.cat(max_pooling_layer, dim=1) 
         fully_connected_layer = self.output_layer(self.dropout(flatten_layer))
-        preds = self.sigmoid(fully_connected_layer)
+        binary_probabilities = self.sigmoid(fully_connected_layer)
         
-        return preds
+        return binary_probabilities
