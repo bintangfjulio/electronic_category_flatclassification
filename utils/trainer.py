@@ -33,13 +33,13 @@ class Flat_FineTuning(pl.LightningModule):
     def training_step(self, train_batch, batch_idx):
         input_ids, target = train_batch
 
-        preds = self.model(input_ids=input_ids)
-        loss = self.criterion(preds.cpu(), target=target.float().cpu())
+        probabilities = self.model(input_ids=input_ids)
+        loss = self.criterion(probabilities.cpu(), target=target.float().cpu())
 
-        pred = preds.argmax(1).cpu()
-        target = target.argmax(1).cpu()
-        accuracy = accuracy_score(target, pred)
-        mcc = matthews_corrcoef(target, pred)
+        max_probability_idx = probabilities.argmax(1).cpu()
+        target_idx = target.argmax(1).cpu()
+        accuracy = accuracy_score(target_idx, max_probability_idx)
+        mcc = matthews_corrcoef(target_idx, max_probability_idx)
 
         self.log_dict({'train_loss': loss, 'train_accuracy': accuracy, 'train_mcc': mcc}, prog_bar=True, on_epoch=True)
 
@@ -48,13 +48,13 @@ class Flat_FineTuning(pl.LightningModule):
     def validation_step(self, valid_batch, batch_idx):
         input_ids, target = valid_batch
 
-        preds = self.model(input_ids=input_ids)
-        loss = self.criterion(preds.cpu(), target=target.float().cpu())
+        probabilities = self.model(input_ids=input_ids)
+        loss = self.criterion(probabilities.cpu(), target=target.float().cpu())
 
-        pred = preds.argmax(1).cpu()
-        target = target.argmax(1).cpu()
-        accuracy = accuracy_score(target, pred)
-        mcc = matthews_corrcoef(target, pred)
+        max_probability_idx = probabilities.argmax(1).cpu()
+        target_idx = target.argmax(1).cpu()
+        accuracy = accuracy_score(target_idx, max_probability_idx)
+        mcc = matthews_corrcoef(target_idx, max_probability_idx)
 
         self.log_dict({'val_loss': loss, 'val_accuracy': accuracy, 'val_mcc': mcc}, prog_bar=True, on_epoch=True)
 
@@ -63,13 +63,13 @@ class Flat_FineTuning(pl.LightningModule):
     def test_step(self, test_batch, batch_idx):
         input_ids, target = test_batch
 
-        preds = self.model(input_ids=input_ids)
-        loss = self.criterion(preds.cpu(), target=target.float().cpu())
+        probabilities = self.model(input_ids=input_ids)
+        loss = self.criterion(probabilities.cpu(), target=target.float().cpu())
 
-        pred = preds.argmax(1).cpu()
-        target = target.argmax(1).cpu()
-        accuracy = accuracy_score(target, pred)
-        mcc = matthews_corrcoef(target, pred)
+        max_probability_idx = probabilities.argmax(1).cpu()
+        target_idx = target.argmax(1).cpu()
+        accuracy = accuracy_score(target_idx, max_probability_idx)
+        mcc = matthews_corrcoef(target_idx, max_probability_idx)
 
         self.log_dict({'test_loss': loss, 'test_accuracy': accuracy, 'test_mcc': mcc}, prog_bar=True, on_epoch=True)
 
