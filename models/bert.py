@@ -19,6 +19,6 @@ class BERT(pl.LightningModule):
         cls_token_state = bert_output_layer[:, 0]
         pooled_output =  self.tanh(self.hidden_layer(cls_token_state))
         fully_connected_layer = self.output_layer(self.dropout(pooled_output))
-        pred = self.sigmoid(fully_connected_layer)
+        binary_probabilities = self.sigmoid(fully_connected_layer)
 
-        return pred
+        return binary_probabilities
