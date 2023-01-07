@@ -46,7 +46,7 @@ class Flat_FineTuning(pl.LightningModule):
         return loss
 
     def validation_step(self, valid_batch, batch_idx):
-        input_ids, target = train_batch
+        input_ids, target = valid_batch
 
         preds = self.model(input_ids=input_ids)
         loss = self.criterion(preds.cpu(), target=target.float().cpu())
@@ -61,7 +61,7 @@ class Flat_FineTuning(pl.LightningModule):
         return loss
 
     def test_step(self, test_batch, batch_idx):
-        input_ids, target = train_batch
+        input_ids, target = test_batch
 
         preds = self.model(input_ids=input_ids)
         loss = self.criterion(preds.cpu(), target=target.float().cpu())
