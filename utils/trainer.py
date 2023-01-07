@@ -31,10 +31,10 @@ class Flat_FineTuning(pl.LightningModule):
         return optimizer
 
     def training_step(self, train_batch, batch_idx):
-        input_ids, targets = train_batch
+        input_ids, target = train_batch
 
         preds = self.model(input_ids=input_ids)
-        loss = self.criterion(preds.cpu(), target=targets.float().cpu())
+        loss = self.criterion(preds.cpu(), target=target.float().cpu())
 
         pred = preds.argmax(1).cpu()
         target = targets.argmax(1).cpu()
@@ -46,10 +46,10 @@ class Flat_FineTuning(pl.LightningModule):
         return loss
 
     def validation_step(self, valid_batch, batch_idx):
-        input_ids, targets = train_batch
+        input_ids, target = train_batch
 
         preds = self.model(input_ids=input_ids)
-        loss = self.criterion(preds.cpu(), target=targets.float().cpu())
+        loss = self.criterion(preds.cpu(), target=target.float().cpu())
 
         pred = preds.argmax(1).cpu()
         target = targets.argmax(1).cpu()
@@ -61,10 +61,10 @@ class Flat_FineTuning(pl.LightningModule):
         return loss
 
     def test_step(self, test_batch, batch_idx):
-        input_ids, targets = train_batch
+        input_ids, target = train_batch
 
         preds = self.model(input_ids=input_ids)
-        loss = self.criterion(preds.cpu(), target=targets.float().cpu())
+        loss = self.criterion(preds.cpu(), target=target.float().cpu())
 
         pred = preds.argmax(1).cpu()
         target = targets.argmax(1).cpu()
