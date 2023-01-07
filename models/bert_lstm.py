@@ -32,6 +32,6 @@ class BERT_LSTM(pl.LightningModule):
             lstm_output = lstm_output_layer[-1]
 
         fully_connected_layer = self.output_layer(self.dropout(lstm_output))
-        binary_probabilities = self.sigmoid(fully_connected_layer)
+        probabilities = self.sigmoid(fully_connected_layer)
         
-        return binary_probabilities
+        return probabilities
