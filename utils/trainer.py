@@ -35,13 +35,13 @@ class Flat_FineTuning(pl.LightningModule):
     def training_step(self, train_batch, batch_idx):
         input_ids, target = train_batch
 
-        probabilities = self.model(input_ids=input_ids)
-        loss = self.criterion(probabilities, target=target.float())
+        preds = self.model(input_ids=input_ids)
+        loss = self.criterion(preds, target=target.float())
 
-        max_probabilities_idx = probabilities.argmax(1)
+        max_pred_idx = preds.argmax(1)
         max_target_idx = target.argmax(1)
-        accuracy = self.accuracy_metric(max_probabilities_idx, max_target_idx)
-        mcc = self.mcc_metric(max_probabilities_idx, max_target_idx)
+        accuracy = self.accuracy_metric(max_pred_idx, max_target_idx)
+        mcc = self.mcc_metric(max_pred_idx, max_target_idx)
 
         self.log_dict({'train_loss': loss, 'train_accuracy': accuracy, 'train_mcc': mcc}, prog_bar=True, on_epoch=True)
 
@@ -50,13 +50,13 @@ class Flat_FineTuning(pl.LightningModule):
     def validation_step(self, valid_batch, batch_idx):
         input_ids, target = valid_batch
 
-        probabilities = self.model(input_ids=input_ids)
-        loss = self.criterion(probabilities, target=target.float())
+        preds = self.model(input_ids=input_ids)
+        loss = self.criterion(preds, target=target.float())
 
-        max_probabilities_idx = probabilities.argmax(1)
+        max_pred_idx = preds.argmax(1)
         max_target_idx = target.argmax(1)
-        accuracy = self.accuracy_metric(max_probabilities_idx, max_target_idx)
-        mcc = self.mcc_metric(max_probabilities_idx, max_target_idx)
+        accuracy = self.accuracy_metric(max_pred_idx, max_target_idx)
+        mcc = self.mcc_metric(max_pred_idx, max_target_idx)
 
         self.log_dict({'val_loss': loss, 'val_accuracy': accuracy, 'val_mcc': mcc}, prog_bar=True, on_epoch=True)
 
@@ -65,13 +65,13 @@ class Flat_FineTuning(pl.LightningModule):
     def test_step(self, test_batch, batch_idx):
         input_ids, target = test_batch
 
-        probabilities = self.model(input_ids=input_ids)
-        loss = self.criterion(probabilities, target=target.float())
+        preds = self.model(input_ids=input_ids)
+        loss = self.criterion(preds, target=target.float())
 
-        max_probabilities_idx = probabilities.argmax(1)
+        max_pred_idx = preds.argmax(1)
         max_target_idx = target.argmax(1)
-        accuracy = self.accuracy_metric(max_probabilities_idx, max_target_idx)
-        mcc = self.mcc_metric(max_probabilities_idx, max_target_idx)
+        accuracy = self.accuracy_metric(max_pred_idx, max_target_idx)
+        mcc = self.mcc_metric(max_pred_idx, max_target_idx)
 
         self.log_dict({'test_loss': loss, 'test_accuracy': accuracy, 'test_mcc': mcc}, prog_bar=True, on_epoch=True)
 
