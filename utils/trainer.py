@@ -11,7 +11,7 @@ from models.bert_cnn import BERT_CNN
 from models.bert_lstm import BERT_LSTM
 
 class Flat_FineTuning(pl.LightningModule):
-    def __init__(self, lr, model_path, num_classes):
+    def __init__(self, lr, num_classes, model_path):
         super(Flat_FineTuning, self).__init__()                 
         if model_path == 'bert':
             self.model = BERT(num_classes=num_classes)
