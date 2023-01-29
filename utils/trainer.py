@@ -23,9 +23,8 @@ class Flat_FineTuning(pl.LightningModule):
             self.model = BERT_LSTM(num_classes=num_classes, bidirectional=False)
         
         self.lr = lr
-        self.criterion = nn.BCELoss()
+        self.criterion = nn.BCEWithLogitsLoss()
         self.accuracy_metric = MulticlassAccuracy(num_classes=num_classes)
-        self.mcc_metric = MulticlassMatthewsCorrCoef(num_classes=num_classes)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
@@ -41,9 +40,8 @@ class Flat_FineTuning(pl.LightningModule):
         max_pred_idx = preds.argmax(1)
         max_target_idx = target.argmax(1)
         accuracy = self.accuracy_metric(max_pred_idx, max_target_idx)
-        mcc = self.mcc_metric(max_pred_idx, max_target_idx)
 
-        self.log_dict({'train_loss': loss, 'train_accuracy': accuracy, 'train_mcc': mcc}, prog_bar=True, on_epoch=True)
+        self.log_dict({'train_loss': loss, 'train_accuracy': accuracy}, prog_bar=True, on_epoch=True)
 
         return loss
 
@@ -56,9 +54,8 @@ class Flat_FineTuning(pl.LightningModule):
         max_pred_idx = preds.argmax(1)
         max_target_idx = target.argmax(1)
         accuracy = self.accuracy_metric(max_pred_idx, max_target_idx)
-        mcc = self.mcc_metric(max_pred_idx, max_target_idx)
 
-        self.log_dict({'val_loss': loss, 'val_accuracy': accuracy, 'val_mcc': mcc}, prog_bar=True, on_epoch=True)
+        self.log_dict({'val_loss': loss, 'val_accuracy': accuracy}, prog_bar=True, on_epoch=True)
 
         return loss
 
@@ -71,9 +68,8 @@ class Flat_FineTuning(pl.LightningModule):
         max_pred_idx = preds.argmax(1)
         max_target_idx = target.argmax(1)
         accuracy = self.accuracy_metric(max_pred_idx, max_target_idx)
-        mcc = self.mcc_metric(max_pred_idx, max_target_idx)
 
-        self.log_dict({'test_loss': loss, 'test_accuracy': accuracy, 'test_mcc': mcc}, prog_bar=True, on_epoch=True)
+        self.log_dict({'test_loss': loss, 'test_accuracy': accuracy}, prog_bar=True, on_epoch=True)
 
         return loss
 
