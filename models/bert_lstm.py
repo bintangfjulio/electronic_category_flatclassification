@@ -11,7 +11,6 @@ class BERT_LSTM(pl.LightningModule):
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, bidirectional=bidirectional, batch_first=True)
         self.dropout = nn.Dropout(dropout) 
         self.bidirectional = bidirectional
-        self.sigmoid = nn.Sigmoid()
         
         if bidirectional:
             self.output_layer = nn.Linear(hidden_size * 2, num_classes)    
@@ -31,7 +30,6 @@ class BERT_LSTM(pl.LightningModule):
         else:
             lstm_output = lstm_output_layer[-1]
 
-        fully_connected_layer = self.output_layer(self.dropout(lstm_output))
-        preds = self.sigmoid(fully_connected_layer)
+        preds = self.output_layer(self.dropout(lstm_output))
         
         return preds
