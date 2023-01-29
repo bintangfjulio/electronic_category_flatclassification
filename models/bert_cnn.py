@@ -12,7 +12,6 @@ class BERT_CNN(pl.LightningModule):
         self.convolutional_layers = nn.ModuleList([nn.Conv2d(in_channels, out_channels, (window_size, input_size)) for window_size in window_sizes])
         self.dropout = nn.Dropout(dropout)
         self.output_layer = nn.Linear(len(window_sizes) * out_channels, num_classes)
-        self.sigmoid = nn.Sigmoid()
 
     def forward(self, input_ids):
         bert_output = self.pretrained_bert(input_ids=input_ids)
@@ -24,7 +23,6 @@ class BERT_CNN(pl.LightningModule):
         max_pooling_layer = [F.max_pool1d(filtered_features, filtered_features.size(2)).squeeze(2) for filtered_features in pooling_layer]  
 
         flatten_layer = torch.cat(max_pooling_layer, dim=1) 
-        fully_connected_layer = self.output_layer(self.dropout(flatten_layer))
-        preds = self.sigmoid(fully_connected_layer)
+        preds = self.output_layer(self.dropout(flatten_layer))
         
         return preds
