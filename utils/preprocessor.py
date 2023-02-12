@@ -120,20 +120,7 @@ class Preprocessor(pl.LightningDataModule):
                         section_by_hierarchy[parent_idx]['binary_target'].append(hierarchical_binary_label)
                         section_by_hierarchy[parent_idx]['categorical_target'].append(hierarchical_categorical_label)
         
-            if method == 'flat':
-                if queue == 0:
-                    train_set, valid_set = self.train_valid_split(input_ids, binary_target, categorical_target)
-                    torch.save(train_set, f"datasets/{self.method}_level_{str(level)}_train_set.pt")
-                    torch.save(valid_set, f"datasets/{self.method}_level_{str(level)}_valid_set.pt")
-                    
-                elif queue == 1:
-                    input_ids = torch.tensor(input_ids)
-                    binary_target = torch.tensor(binary_target)
-                    categorical_target = torch.tensor(categorical_target)
-                    test_set = TensorDataset(input_ids, binary_target, categorical_target)
-                    torch.save(test_set, f"datasets/{self.method}_level_{str(level)}_test_set.pt")
-
-            elif method == 'level':
+            if method == 'flat' or method == 'level':
                 if queue == 0:
                     train_set, valid_set = self.train_valid_split(input_ids, binary_target, categorical_target)
                     torch.save(train_set, f"datasets/{self.method}_level_{str(level)}_train_set.pt")
