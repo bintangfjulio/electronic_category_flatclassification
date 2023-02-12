@@ -1,71 +1,56 @@
 import torch
 import os
 import re
-import pytorch_lightning as pl
-import multiprocessing
 import string
-import pickle
+import multiprocessing
+import requests
+import pytorch_lightning as pl
+import pandas as pd
 
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from transformers import BertTokenizer
 from torch.utils.data import TensorDataset, DataLoader
+from utils.tree_creator import Tree_Creator
+
+import sys
+import pickle
 
 class Preprocessor(pl.LightningDataModule):
-    def __init__(self, batch_size, dataset, num_classes, hierarchy_tree):
+    def __init__(self, batch_size, method):
         super(Preprocessor, self).__init__()
         self.batch_size = batch_size
-        self.dataset = dataset
-        self.num_classes = num_classes
-        self.hierarchy_tree = hierarchy_tree
+        self.method = method
+        self.dataset = pd.read_csv('datasets/small_product_tokopedia.csv')
+        self.hierarchy_tree = 'datasets/small_hierarchy.tree'
         self.stop_words = StopWordRemoverFactory().get_stop_words()
         self.stemmer = StemmerFactory().create_stemmer()
         self.tokenizer = BertTokenizer.from_pretrained('indolem/indobert-base-uncased')
 
-    def setup(self, stage=None):
-        train_set, valid_set, test_set = self.preprocessor()   
-        if stage == "fit":
-            self.train_set = train_set
-            self.valid_set = valid_set
-        elif stage == "test":
-            self.test_set = test_set
+        # url = 'https://github.com/bintangfjulio/product_categories_classification/releases/download/0.0/product_tokopedia.csv'
+        # file = requests.get(url, allow_redirects=True)
+        # open('datasets/product_tokopedia.csv', 'wb').write(file.content)
+        # self.dataset = pd.read_csv('datasets/product_tokopedia.csv')
 
-    def train_dataloader(self):
-        return DataLoader(
-            dataset=self.train_set,
-            batch_size=self.batch_size,
-            shuffle=True,
-            num_workers=multiprocessing.cpu_count()
-        )
-
-    def val_dataloader(self):
-        return DataLoader(
-            dataset=self.valid_set,
-            batch_size=self.batch_size,
-            num_workers=multiprocessing.cpu_count()
-        )
-
-    def test_dataloader(self):
-        return DataLoader(
-            dataset=self.test_set,
-            batch_size=self.batch_size,
-            num_workers=multiprocessing.cpu_count()
-        )
+        # if not os.path.exists(self.hierarchy_tree):
+        #     Tree_Creator(dataset=self.dataset)
     
     def preprocessor(self):
-        if os.path.exists("datasets/train_set.pt") and os.path.exists("datasets/valid_set.pt") and os.path.exists("datasets/test_set.pt"):
-            print("\nLoading Data...")
-            train_set = torch.load("datasets/train_set.pt")
-            valid_set = torch.load("datasets/valid_set.pt")
-            test_set = torch.load("datasets/test_set.pt")
-            print('[ Loading Completed ]\n')
-        else:
+        if not os.path.exists(f"datasets/{self.method}_train_set.pt") and not os.path.exists(f"datasets/{self.method}_valid_set.pt") and not os.path.exists(f"datasets/{self.method}_test_set.pt"):
             print("\nPreprocessing Data...")
-            train_set, valid_set, test_set = self.preprocessing_data(self.dataset)
+            max_length = self.get_max_length(self.dataset)
+            train_set, test_set = self.train_test_split(self.dataset)
+            self.preprocessing_data(set_queue=[train_set, test_set], max_length=max_length, method=self.method)
             print('[ Preprocessing Completed ]\n')
+        
+        print("\nLoading Data...")
+        train_set = torch.load(f"datasets/{self.method}_train_set.pt")
+        valid_set = torch.load(f"datasets/{self.method}_valid_set.pt")
+        test_set = torch.load(f"datasets/{self.method}_test_set.pt")
+        print('[ Loading Completed ]\n')
 
         return train_set, valid_set, test_set
-
+    
     def get_max_length(self, dataset, extra_length=10):
         sentences_token = []
         
@@ -77,9 +62,89 @@ class Preprocessor(pl.LightningDataModule):
         max_length = max(token_length) + extra_length
         
         return max_length
+    
+    def preprocessing_data(self, set_queue, max_length, method): 
+        section_parent_child, level_of_nodes_indexed = self.generate_hierarchy()
+        parents_idx = {parent: index for index, parent in enumerate(section_parent_child.keys())}        
+        section_by_hierarchy = [[] for i in range(len(parents_idx))]
 
-    def generate_hierarchy_segment(self):
-        segmented_parent_child = {}
+        for queue, dataset in enumerate(set_queue):
+            input_ids, binary_target, categorical_target = [], [], []
+
+            for data in dataset.values.tolist():
+                text = self.text_cleaning(str(data[0]))
+                token = self.tokenizer(text=text, max_length=max_length, padding="max_length", truncation=True)  
+
+                if method == 'flat':
+                    last_node = data[3].split(" > ")[-1].lower()
+
+                    flat_binary_label = [0] * len(level_of_nodes_indexed[3])
+                    flat_binary_label[level_of_nodes_indexed[3][last_node]] = 1
+                    
+                    flat_categorical_label = level_of_nodes_indexed[3][last_node]
+
+                    input_ids.append(token['input_ids'])
+                    binary_target.append(flat_binary_label)
+                    categorical_target.append(flat_categorical_label)
+
+                elif method == 'section':
+                    nodes = data[3].lower().split(" > ")
+
+                    for depth, node in enumerate(nodes[:-1]):
+                        child = nodes[depth + 1]
+                        child_of_parent = list(section_parent_child[node])
+                        child_idx = child_of_parent.index(child)
+
+                        hierarchical_binary_label = [0] * len(child_of_parent)
+                        hierarchical_binary_label[child_idx] = 1
+
+                        hierarchical_categorical_label = child_idx
+                        
+                        parent_idx = parents_idx[node]
+
+                        if 'input_ids' not in section_by_hierarchy[parent_idx]:
+                            section_by_hierarchy[parent_idx] = {'input_ids': [], 'binary_target': [], 'categorical_target': []}
+                        
+                        section_by_hierarchy[parent_idx]['input_ids'].append(token['input_ids'])
+                        section_by_hierarchy[parent_idx]['binary_target'].append(hierarchical_binary_label)
+                        section_by_hierarchy[parent_idx]['categorical_target'].append(hierarchical_categorical_label)
+
+                else:
+                    pass
+        
+            if method == 'flat':
+                if queue == 0:
+                    train_set, valid_set = self.train_valid_split(input_ids, binary_target, categorical_target)
+                    torch.save(train_set, f"datasets/{self.method}_train_set.pt")
+                    torch.save(valid_set, f"datasets/{self.method}_valid_set.pt")
+                    
+                elif queue == 1:
+                    input_ids = torch.tensor(input_ids)
+                    binary_target = torch.tensor(binary_target)
+                    categorical_target = torch.tensor(categorical_target)
+                    test_set = TensorDataset(input_ids, binary_target, categorical_target)
+                    torch.save(test_set, f"datasets/{self.method}_test_set.pt")
+
+            elif method == 'level':
+                pass
+
+            elif method == 'section':
+                pass
+                # sectioned_dataset = []
+
+                # for section in section_by_hierarchy:
+                #     sectioned_input_ids = section['input_ids']
+                #     sectioned_target = section['target']
+                    
+                #     train_set, valid_set, test_set = self.dataset_splitting(sectioned_input_ids, sectioned_target)
+                #     sectioned_dataset.append([train_set, valid_set, test_set])
+
+                # with open("datasets/hierarchical_dataset.pkl", "wb") as hierarchical_preprocessed:
+                #     pickle.dump(sectioned_dataset, hierarchical_preprocessed, protocol=pickle.HIGHEST_PROTOCOL)
+
+    def generate_hierarchy(self):
+        section_parent_child = {}
+        level_of_nodes = {}
 
         with open(self.hierarchy_tree, "r") as tree:
             for path in tree:
@@ -89,72 +154,31 @@ class Preprocessor(pl.LightningDataModule):
                     if depth > 0:
                         parent = nodes[depth - 1]
                         try:
-                            segmented_parent_child[parent].add(node)
+                            section_parent_child[parent].add(node)
                         except:
-                            segmented_parent_child[parent] = set()
-                            segmented_parent_child[parent].add(node)
-    
-        return segmented_parent_child
+                            section_parent_child[parent] = set()
+                            section_parent_child[parent].add(node)
 
-    def preprocessing_data(self, dataset): 
-        labels_idx = dataset['leaf'].unique().tolist()
-        dataset['label_idx'] = dataset['leaf'].map(lambda x: labels_idx.index(x))
+                level = len(nodes)
+                last_node = nodes[-1]
 
-        segmented_parent_child = self.generate_hierarchy_segment()
-        parents_idx = {parent: index for index, parent in enumerate(segmented_parent_child.keys())}        
-        segmented_by_hierarchy = [[] for i in range(len(parents_idx))]
+                if level not in level_of_nodes:
+                    level_of_nodes[level] = []
 
-        flat_input_ids, flat_target = [], []
-        max_length = self.get_max_length(dataset)
+                level_of_nodes[level] += [last_node]
 
-        for data in dataset.values.tolist():
-            name = self.text_cleaning(str(data[0])) 
-            flat_binary = [0] * self.num_classes
-            flat_binary[int(data[4])] = 1
+        level_of_nodes_indexed = {}
 
-            token = self.tokenizer(text=name, max_length=max_length, padding="max_length", truncation=True)  
+        for level, node_members in level_of_nodes.items():
+            node_with_idx = {}
 
-            path = data[3]
-            nodes = path.lower().split(" > ")
-
-            for depth, node in enumerate(nodes[:-1]):
-                child = nodes[depth + 1]
-                child_of_parent = list(segmented_parent_child[node])
-                child_idx = child_of_parent.index(child)
-
-                hierarchical_binary = [0] * len(child_of_parent)
-                hierarchical_binary[child_idx] = 1
-                
-                parent_idx = parents_idx[node]
-
-                if 'input_ids' not in segmented_by_hierarchy[parent_idx]:
-                    segmented_by_hierarchy[parent_idx] = {'input_ids': [], 'hierarchical_target': []}
-                
-                segmented_by_hierarchy[parent_idx]['input_ids'].append(token['input_ids'])
-                segmented_by_hierarchy[parent_idx]['hierarchical_target'].append(hierarchical_binary)
+            for node_idx, node in enumerate(node_members):
+                node_with_idx[node] = node_idx
             
-            flat_input_ids.append(token['input_ids'])
-            flat_target.append(flat_binary)
+            level_of_nodes_indexed[level] = node_with_idx
 
-        hierarchical_dataset = []
+        return section_parent_child, level_of_nodes_indexed
 
-        for data in segmented_by_hierarchy:
-            hierarchical_input_ids = data['input_ids']
-            hierarchical_target = data['hierarchical_target']
-            
-            train_set, valid_set, test_set = self.dataset_splitting(hierarchical_input_ids, hierarchical_target)
-            hierarchical_dataset.append([train_set, valid_set, test_set])
-
-        with open("datasets/hierarchical_dataset.pkl", "wb") as hierarchical_preprocessed:
-            pickle.dump(hierarchical_dataset, hierarchical_preprocessed, protocol=pickle.HIGHEST_PROTOCOL)
-
-        train_set, valid_set, test_set = self.dataset_splitting(flat_input_ids, flat_target)
-        torch.save(train_set, "datasets/train_set.pt")
-        torch.save(valid_set, "datasets/valid_set.pt")
-        torch.save(test_set, "datasets/test_set.pt")
-
-        return train_set, valid_set, test_set
-    
     def text_cleaning(self, text):
         text = text.lower()
         text = re.sub(r"[^A-Za-z0-9(),!?\'\-`]", " ", text)
@@ -168,21 +192,62 @@ class Preprocessor(pl.LightningDataModule):
         text = self.stemmer.stem(text.strip())
 
         return text
-    
-    def dataset_splitting(self, input_ids, target):
+
+    def train_test_split(self, dataset):
+        dataset = dataset.sample(frac=1)
+        dataset_size = dataset.shape[0]
+        train_size = int(dataset_size * 0.7)
+
+        train_set = dataset.iloc[:train_size, :]
+        test_set = dataset.iloc[train_size:, :]
+
+        train_set = pd.DataFrame(train_set)
+        test_set = pd.DataFrame(test_set)
+
+        return train_set, test_set
+
+    def train_valid_split(self, input_ids, binary_target, categorical_target):
         input_ids = torch.tensor(input_ids)
-        target = torch.tensor(target)
+        binary_target = torch.tensor(binary_target)
+        categorical_target = torch.tensor(categorical_target)
         
-        tensor_dataset = TensorDataset(input_ids, target)
+        tensor_dataset = TensorDataset(input_ids, binary_target, categorical_target)
 
-        train_valid_size = round(len(tensor_dataset) * 0.8)
-        test_size = len(tensor_dataset) - train_valid_size
+        train_size = round(len(tensor_dataset) * 0.9)
+        valid_size = len(tensor_dataset) - train_size
 
-        train_valid_set, test_set = torch.utils.data.random_split(tensor_dataset, [train_valid_size, test_size])
+        train_set, valid_set = torch.utils.data.random_split(tensor_dataset, [train_size, valid_size])
 
-        train_size = round(len(train_valid_set) * 0.9)
-        valid_size = len(train_valid_set) - train_size
+        return train_set, valid_set
 
-        train_set, valid_set = torch.utils.data.random_split(train_valid_set, [train_size, valid_size])
+    # def setup(self, stage=None):
+    #     flat_train_set, flat_valid_set, flat_test_set = self.preprocessor()   
+    #     if stage == "fit":
+    #         self.flat_train_set = flat_train_set
+    #         self.flat_valid_set = flat_valid_set
+    #     elif stage == "test":
+    #         self.flat_test_set = flat_test_set
 
-        return train_set, valid_set, test_set
+    # def train_dataloader(self):
+    #     return DataLoader(
+    #         dataset=self.flat_train_set,
+    #         batch_size=self.batch_size,
+    #         shuffle=True,
+    #         num_workers=multiprocessing.cpu_count()
+    #     )
+
+    # def val_dataloader(self):
+    #     return DataLoader(
+    #         dataset=self.flat_valid_set,
+    #         batch_size=self.batch_size,
+    #         shuffle=False,
+    #         num_workers=multiprocessing.cpu_count()
+    #     )
+
+    # def test_dataloader(self):
+    #     return DataLoader(
+    #         dataset=self.flat_test_set,
+    #         batch_size=self.batch_size,
+    #         shuffle=False,
+    #         num_workers=multiprocessing.cpu_count()
+    #     )

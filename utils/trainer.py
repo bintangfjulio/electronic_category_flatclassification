@@ -95,6 +95,6 @@ class Trainer:
 
             trainer.fit(model=model, datamodule=module)
             trainer.test(model=model, datamodule=module, ckpt_path='best')
-         
+        
         elif method == 'hierarchy':
             pass
