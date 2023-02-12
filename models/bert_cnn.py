@@ -12,17 +12,18 @@ class BERT_CNN(pl.LightningModule):
         self.convolutional_layers = nn.ModuleList([nn.Conv2d(in_channels, out_channels, (window_size, input_size)) for window_size in window_sizes])
         self.dropout = nn.Dropout(dropout)
         self.output_layer = nn.Linear(len(window_sizes) * out_channels, num_classes)
+        self.tanh = nn.Tanh()
 
     def forward(self, input_ids):
         bert_output = self.pretrained_bert(input_ids=input_ids)
-        bert_hidden_layers = bert_output[2]
-        bert_hidden_layers = torch.stack(bert_hidden_layers, dim=1)
-        bert_hidden_layers = bert_hidden_layers[:, -4:]
+        all_hidden_states = bert_output[2]
+        all_hidden_states = torch.stack(all_hidden_states, dim=1)
+        selected_hidden_states = all_hidden_states[:, -4:]
 
-        pooling_layer = [F.relu(convolutional_layer(bert_hidden_layers).squeeze(3)) for convolutional_layer in self.convolutional_layers] 
-        max_pooling_layer = [F.max_pool1d(filtered_features, filtered_features.size(2)).squeeze(2) for filtered_features in pooling_layer]  
+        pooling_layer = [F.relu(layer(selected_hidden_states).squeeze(3)) for layer in self.convolutional_layers] 
+        max_pooling_layer = [F.max_pool1d(features, features.size(2)).squeeze(2) for features in pooling_layer]  
 
         flatten_layer = torch.cat(max_pooling_layer, dim=1) 
-        preds = self.output_layer(self.dropout(flatten_layer))
+        preds = self.output_layer(self.dropout(self.tanh(flatten_layer)))
         
         return preds

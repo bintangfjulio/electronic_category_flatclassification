@@ -125,22 +125,23 @@ class Preprocessor(pl.LightningDataModule):
                     test_set = TensorDataset(input_ids, binary_target, categorical_target)
                     torch.save(test_set, f"datasets/{self.method}_test_set.pt")
 
-            elif method == 'level':
-                pass
-
             elif method == 'section':
                 pass
                 # sectioned_dataset = []
 
                 # for section in section_by_hierarchy:
                 #     sectioned_input_ids = section['input_ids']
-                #     sectioned_target = section['target']
+                #     sectioned_binary_target = section['binary_target']
+                #     sectioned_categorical_target = section['categorical_target']
                     
-                #     train_set, valid_set, test_set = self.dataset_splitting(sectioned_input_ids, sectioned_target)
+                #     train_set, valid_set, test_set = self.dataset_splitting(sectioned_input_ids, sectioned_binary_target, sectioned_categorical_target)
                 #     sectioned_dataset.append([train_set, valid_set, test_set])
 
                 # with open("datasets/hierarchical_dataset.pkl", "wb") as hierarchical_preprocessed:
                 #     pickle.dump(sectioned_dataset, hierarchical_preprocessed, protocol=pickle.HIGHEST_PROTOCOL)
+
+            else:
+                pass
 
     def generate_hierarchy(self):
         section_parent_child = {}
@@ -196,7 +197,7 @@ class Preprocessor(pl.LightningDataModule):
     def train_test_split(self, dataset):
         dataset = dataset.sample(frac=1)
         dataset_size = dataset.shape[0]
-        train_size = int(dataset_size * 0.7)
+        train_size = int(dataset_size * 0.8)
 
         train_set = dataset.iloc[:train_size, :]
         test_set = dataset.iloc[train_size:, :]
