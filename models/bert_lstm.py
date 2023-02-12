@@ -14,7 +14,8 @@ class BERT_LSTM(pl.LightningModule):
         self.tanh = nn.Tanh()
         
         if bidirectional:
-            self.output_layer = nn.Linear(hidden_size * 2, num_classes)    
+            self.output_layer = nn.Linear(hidden_size * 2, num_classes) 
+
         else: 
             self.output_layer = nn.Linear(hidden_size, num_classes)
 
@@ -28,6 +29,7 @@ class BERT_LSTM(pl.LightningModule):
             last_sequential_backward = lstm_hidden_state[-2]
             last_sequential_forward = lstm_hidden_state[-1]
             lstm_output = torch.cat([last_sequential_backward, last_sequential_forward], dim=-1)   
+            
         else:
             lstm_output = lstm_hidden_state[-1]
 
