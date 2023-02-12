@@ -226,7 +226,7 @@ class Preprocessor(pl.LightningDataModule):
 
         return train_set, valid_set
 
-    # Pytorch Lightning Trainer Setup Overriding for Flat Fine Tuning Method
+    # Overriding Pytorch Lightning Setup for Flat Fine Tuning
     def setup(self, stage=None):
         flat_train_set, flat_valid_set, flat_test_set = self.preprocessor()   
         if stage == "flat_fit":
