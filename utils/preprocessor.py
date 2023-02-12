@@ -265,7 +265,7 @@ class Preprocessor(pl.LightningDataModule):
             num_workers=multiprocessing.cpu_count()
         )
 
-    # Custom Method Data Loader for Level Fine Tuning 
+    # Custom Data Loader for Level Fine Tuning 
     def level_dataloader(self, stage, level):
         level_train_set, level_valid_set, level_test_set = self.preprocessor(level=level) 
         if stage == 'fit':
