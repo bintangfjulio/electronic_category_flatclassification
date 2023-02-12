@@ -225,14 +225,20 @@ class Preprocessor(pl.LightningDataModule):
         train_set, valid_set = torch.utils.data.random_split(tensor_dataset, [train_size, valid_size])
 
         return train_set, valid_set
+    
+    def count_flat_classes(self):
+        _, level_on_nodes_indexed = self.generate_hierarchy()
+        num_classes = len(level_on_nodes_indexed[2])
 
-    # Overriding Pytorch Lightning Setup for Flat Fine Tuning
+        return num_classes
+
+    # Overriding Pytorch Lightning Data Loader for Flat Fine Tuning
     def setup(self, stage=None):
         flat_train_set, flat_valid_set, flat_test_set = self.preprocessor()   
-        if stage == "flat_fit":
+        if stage == "fit":
             self.flat_train_set = flat_train_set
             self.flat_valid_set = flat_valid_set
-        elif stage == "flat_test":
+        elif stage == "test":
             self.flat_test_set = flat_test_set
 
     def train_dataloader(self):
@@ -258,3 +264,27 @@ class Preprocessor(pl.LightningDataModule):
             shuffle=False,
             num_workers=multiprocessing.cpu_count()
         )
+
+    # Custom Method Data Loader for Level Fine Tuning 
+    def level_dataloader(self, stage, level):
+        level_train_set, level_valid_set, level_test_set = self.preprocessor(level=level) 
+        if stage == 'fit':
+            train_dataloader = DataLoader(dataset=level_train_set,
+                                        batch_size=self.batch_size,
+                                        shuffle=True,
+                                        num_workers=multiprocessing.cpu_count())
+
+            val_dataloader = DataLoader(dataset=level_valid_set,
+                                        batch_size=self.batch_size,
+                                        shuffle=False,
+                                        num_workers=multiprocessing.cpu_count())
+
+            return train_dataloader, val_dataloader
+
+        elif stage  == 'test':
+            test_dataloader = DataLoader(dataset=level_test_set,
+                                        batch_size=self.batch_size,
+                                        shuffle=False,
+                                        num_workers=multiprocessing.cpu_count())
+
+            return test_dataloader
