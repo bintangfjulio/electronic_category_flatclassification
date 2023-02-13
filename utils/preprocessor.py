@@ -282,7 +282,7 @@ class Preprocessor(pl.LightningDataModule):
 
             return train_dataloader, val_dataloader
 
-        elif stage  == 'test':
+        elif stage == 'test':
             test_dataloader = DataLoader(dataset=level_test_set,
                                         batch_size=self.batch_size,
                                         shuffle=False,

@@ -96,6 +96,16 @@ class Flat_Tuning(pl.LightningModule):
 
         return loss
 
+class Level_Tuning(object):
+    def __init__(self):
+        super(Level_Tuning, self).__init__()  
+        
+    def fit(self):
+        pass
+
+    def test(self):
+        pass
+
 class Trainer(object):
     def __init__(self, module, model_path, method, loss):
         if method == 'flat':
@@ -119,6 +129,13 @@ class Trainer(object):
         elif method == 'level':
             _, level_on_nodes_indexed = module.generate_hierarchy()
             level_size = len(level_on_nodes_indexed)
+
+            for level in range(level_size):
+                num_classes = len(level_on_nodes_indexed[level])
+                trainer = Level_Tuning()
+                
+                trainer.fit()
+                trainer.test()
 
         elif method == 'section':
             pass
