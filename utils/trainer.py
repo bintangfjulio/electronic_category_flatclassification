@@ -96,7 +96,7 @@ class Flat_Tuning(pl.LightningModule):
 
         return loss
 
-class Trainer:
+class Trainer(object):
     def __init__(self, module, model_path, method, loss):
         if method == 'flat':
             pl.seed_everything(42, workers=True)
@@ -117,7 +117,8 @@ class Trainer:
             trainer.test(model=model, datamodule=module, ckpt_path='best')
         
         elif method == 'level':
-            pass
+            _, level_on_nodes_indexed = module.generate_hierarchy()
+            level_size = len(level_on_nodes_indexed)
 
         elif method == 'section':
             pass

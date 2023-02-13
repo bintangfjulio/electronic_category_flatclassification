@@ -1,6 +1,6 @@
 import pandas as pd
 
-class Tree_Creator:
+class Tree_Creator(object):
     def __init__(self, dataset):
         hierarchy = []
         
