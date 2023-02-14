@@ -186,7 +186,7 @@ class Level_Tuning(object):
                 val_loss, val_accuracy, val_f1_micro, val_f1_macro = self.validation_step()
                 print("=" * 50)
 
-                if val_loss < minimum_loss:
+                if round(val_loss, 2) < round(minimum_loss, 2):
                     fail = 0
                     minimum_loss = val_loss
             
@@ -246,18 +246,18 @@ class Level_Tuning(object):
             train_step_f1_macro.append(f1_macro)
             train_step_loss.append(loss.item())
             
-            training_progress.set_description("Train Step Loss : " + str(round(loss.item(), 3)) + 
-                                        " | Train Step Accuracy : " + str(round(accuracy, 3)) + 
-                                        " | Train Step F1 Micro : " + str(round(f1_micro, 3)) +
-                                        " | Train Step F1 Macro : " + str(round(f1_macro, 3)))
+            training_progress.set_description("Train Step Loss : " + str(round(loss.item(), 2)) + 
+                                        " | Train Step Accuracy : " + str(round(accuracy, 2)) + 
+                                        " | Train Step F1 Micro : " + str(round(f1_micro, 2)) +
+                                        " | Train Step F1 Macro : " + str(round(f1_macro, 2)))
 
             loss.backward()
             self.optimizer.step()
 
-        print("On Epoch Train Loss: ", round(mean(train_step_loss), 3))
-        print("On Epoch Train Accuracy: ", round(mean(train_step_accuracy), 3))
-        print("On Epoch Train F1 Micro: ", round(mean(train_step_f1_micro), 3))
-        print("On Epoch Train F1 Macro: ", round(mean(train_step_f1_macro), 3))
+        print("On Epoch Train Loss: ", round(mean(train_step_loss), 2))
+        print("On Epoch Train Accuracy: ", round(mean(train_step_accuracy), 2))
+        print("On Epoch Train F1 Micro: ", round(mean(train_step_f1_micro), 2))
+        print("On Epoch Train F1 Macro: ", round(mean(train_step_f1_macro), 2))
 
         self.scheduler.step()
 
@@ -297,15 +297,15 @@ class Level_Tuning(object):
                 val_step_f1_macro.append(f1_macro)
                 val_step_loss.append(loss.item())
                 
-                validation_progress.set_description("Validation Step Loss : " + str(round(loss.item(), 3)) + 
-                                            " | Validation Step Accuracy : " + str(round(accuracy, 3)) + 
-                                            " | Validation Step F1 Micro : " + str(round(f1_micro, 3)) +
-                                            " | Validation Step F1 Macro : " + str(round(f1_macro, 3)))
+                validation_progress.set_description("Validation Step Loss : " + str(round(loss.item(), 2)) + 
+                                            " | Validation Step Accuracy : " + str(round(accuracy, 2)) + 
+                                            " | Validation Step F1 Micro : " + str(round(f1_micro, 2)) +
+                                            " | Validation Step F1 Macro : " + str(round(f1_macro, 2)))
 
-        print("On Epoch Validation Loss: ", round(mean(val_step_loss), 3))
-        print("On Epoch Validation Accuracy: ", round(mean(val_step_accuracy), 3))
-        print("On Epoch Validation F1 Micro: ", round(mean(val_step_f1_micro), 3))
-        print("On Epoch Validation F1 Macro: ", round(mean(val_step_f1_macro), 3))
+        print("On Epoch Validation Loss: ", round(mean(val_step_loss), 2))
+        print("On Epoch Validation Accuracy: ", round(mean(val_step_accuracy), 2))
+        print("On Epoch Validation F1 Micro: ", round(mean(val_step_f1_micro), 2))
+        print("On Epoch Validation F1 Macro: ", round(mean(val_step_f1_macro), 2))
 
         self.scheduler.step()
 
@@ -345,15 +345,15 @@ class Level_Tuning(object):
                 test_step_f1_macro.append(f1_macro)
                 test_step_loss.append(loss.item())
                 
-                test_progress.set_description("Test Step Loss : " + str(round(loss.item(), 3)) + 
-                                            " | Test Step Accuracy : " + str(round(accuracy, 3)) + 
-                                            " | Test Step F1 Micro : " + str(round(f1_micro, 3)) +
-                                            " | Test Step F1 Macro : " + str(round(f1_macro, 3)))
+                test_progress.set_description("Test Step Loss : " + str(round(loss.item(), 2)) + 
+                                            " | Test Step Accuracy : " + str(round(accuracy, 2)) + 
+                                            " | Test Step F1 Micro : " + str(round(f1_micro, 2)) +
+                                            " | Test Step F1 Macro : " + str(round(f1_macro, 2)))
 
-        print("On Epoch Validation Loss: ", round(mean(test_step_loss), 3))
-        print("On Epoch Validation Accuracy: ", round(mean(test_step_accuracy), 3))
-        print("On Epoch Validation F1 Micro: ", round(mean(test_step_f1_micro), 3))
-        print("On Epoch Validation F1 Macro: ", round(mean(test_step_f1_macro), 3))
+        print("On Epoch Validation Loss: ", round(mean(test_step_loss), 2))
+        print("On Epoch Validation Accuracy: ", round(mean(test_step_accuracy), 2))
+        print("On Epoch Validation F1 Micro: ", round(mean(test_step_f1_micro), 2))
+        print("On Epoch Validation F1 Macro: ", round(mean(test_step_f1_macro), 2))
 
         self.scheduler.step()
 
