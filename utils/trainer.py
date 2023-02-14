@@ -180,14 +180,13 @@ class Level_Tuning(object):
         val_level = []
 
         for epoch in range(self.max_epochs):
-            print("Epoch ", epoch)
-
             for level in range(level_size):
                 self.num_classes = len(level_on_nodes_indexed[level])
                 self.initialize_model(num_classes=self.num_classes)
 
                 self.train_set, self.valid_set = self.module.level_dataloader(stage='fit', level=level)
 
+                print("Epoch ", epoch)
                 print("Level ", level)
                 print("=" * 50)
 
