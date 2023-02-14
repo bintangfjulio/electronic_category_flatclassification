@@ -2,6 +2,7 @@ import torch
 import pytorch_lightning as pl
 import torch.nn as nn
 import numpy as np
+import pandas as pd
 
 from statistics import mean
 from tqdm import tqdm
@@ -150,8 +151,8 @@ class Level_Tuning(object):
         self.model.to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, 
-                                                        start_factor=0.5, 
-                                                        total_iters=100)
+                                                        start_factor=0.5, # ?
+                                                        total_iters=100) # ?
 
         # if self.last_level_checkpoint:
         #     self.model.load_state_dict(torch.load(self.last_level_checkpoint))
@@ -160,9 +161,9 @@ class Level_Tuning(object):
         _, level_on_nodes_indexed = self.module.generate_hierarchy()
         level_size = len(level_on_nodes_indexed)
 
-        patience = self.early_stop_patience
-        minimum_loss = 1.00
-        fail = 0
+        # patience = self.early_stop_patience
+        # minimum_loss = 1.00
+        # fail = 0
 
         train_accuracy_graph = []
         train_loss_graph = []
@@ -179,7 +180,7 @@ class Level_Tuning(object):
         val_level = []
 
         for epoch in range(self.max_epochs):
-            print("Epoch = ", (epoch + 1))
+            print("Epoch ", epoch)
 
             for level in range(level_size):
                 self.num_classes = len(level_on_nodes_indexed[level])
@@ -192,26 +193,50 @@ class Level_Tuning(object):
 
                 print("Training Stage")
                 train_loss, train_accuracy, train_f1_micro, train_f1_macro = self.training_step()
+                
+                train_accuracy_graph.append(train_accuracy)
+                train_loss_graph.append(train_loss)
+                train_f1_micro_graph.append(train_f1_micro)
+                train_f1_macro_graph.append(train_f1_macro)
+                train_epoch.append(epoch)
+                train_level.append(level)
 
                 print("Validation Stage")
                 val_loss, val_accuracy, val_f1_micro, val_f1_macro = self.validation_step()
+                
+                val_accuracy_graph.append(val_accuracy)
+                val_loss_graph.append(val_loss)
+                val_f1_micro_graph.append(val_f1_micro)
+                val_f1_macro_graph.append(val_f1_macro)
+                val_epoch.append(epoch)
+                val_level.append(level)
                 print("=" * 50)
 
-                if round(val_loss, 2) < round(minimum_loss, 2):
-                    fail = 0
-                    minimum_loss = val_loss
+                # if round(val_loss, 2) < round(minimum_loss, 2):
+                    # fail = 0
+                    # minimum_loss = val_loss
             
-                else:
-                    fail += 1
+                # else:
+                    # fail += 1
 
-            if fail == patience:
-                break
+            # if fail == patience:
+                # break
+        
+        train_graph = pd.DataFrame({'epoch': train_epoch, 'level': train_level, 'accuracy': train_accuracy_graph, 'loss': train_loss_graph, 'f1_micro': train_f1_micro_graph, 'f1_macro': train_f1_macro_graph})
+        valid_graph = pd.DataFrame({'epoch': val_epoch, 'level': val_level, 'accuracy': val_accuracy_graph, 'loss': val_loss_graph, 'f1_micro': val_f1_micro_graph, 'f1_macro': val_f1_macro_graph})
+        
+        train_graph.to_csv('train_graph.csv', index=False, encoding='utf-8')
+        valid_graph.to_csv('valid_graph.csv, index=False, encoding='utf-8')
 
     def test(self):
         _, level_on_nodes_indexed = self.module.generate_hierarchy()
         level_size = len(level_on_nodes_indexed)
 
-        test_graph = []
+        test_accuracy_graph = []
+        test_loss_graph = []
+        test_f1_micro_graph = []
+        test_f1_macro_graph = []
+        test_level = []
 
         for level in range(level_size):
             self.test_set = self.module.level_dataloader(stage='test', level=level)
@@ -221,7 +246,16 @@ class Level_Tuning(object):
             print("Test Stage")
             test_loss, test_accuracy, test_f1_micro, test_f1_macro = self.test_step()
             print("=" * 50)
-
+            
+            test_accuracy_graph.append(test_accuracy)
+            test_loss_graph.append(test_loss)
+            test_f1_micro_graph.append(test_f1_micro)
+            test_f1_macro_graph.append(test_f1_macro)
+            test_level.append(level)
+                          
+        test_graph = pd.DataFrame({'level': test_level, 'accuracy': test_accuracy_graph, 'loss': test_loss_graph, 'f1_micro': test_f1_micro_graph, 'f1_macro': test_f1_macro_graph})
+        test_graph.to_csv('test_graph.csv, index=False, encoding='utf-8')
+                           
     def training_step(self):
         self.model.train()
         self.model.zero_grad()
