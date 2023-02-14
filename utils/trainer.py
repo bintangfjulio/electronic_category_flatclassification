@@ -164,8 +164,19 @@ class Level_Tuning(object):
         minimum_loss = 1.00
         fail = 0
 
-        train_graph = []
-        val_graph = []
+        train_accuracy_graph = []
+        train_loss_graph = []
+        train_f1_micro_graph = []
+        train_f1_macro_graph = []
+        train_epoch = []
+        train_level = []
+        
+        val_accuracy_graph = []
+        val_loss_graph = []
+        val_f1_micro_graph = []
+        val_f1_macro_graph = []
+        val_epoch = []
+        val_level = []
 
         for epoch in range(self.max_epochs):
             print("Epoch = ", (epoch + 1))
