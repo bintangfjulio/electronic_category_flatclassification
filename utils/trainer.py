@@ -350,10 +350,10 @@ class Level_Tuning(object):
                                             " | Test Step F1 Micro : " + str(round(f1_micro, 2)) +
                                             " | Test Step F1 Macro : " + str(round(f1_macro, 2)))
 
-        print("On Epoch Validation Loss: ", round(mean(test_step_loss), 2))
-        print("On Epoch Validation Accuracy: ", round(mean(test_step_accuracy), 2))
-        print("On Epoch Validation F1 Micro: ", round(mean(test_step_f1_micro), 2))
-        print("On Epoch Validation F1 Macro: ", round(mean(test_step_f1_macro), 2))
+        print("On Epoch Test Loss: ", round(mean(test_step_loss), 2))
+        print("On Epoch Test Accuracy: ", round(mean(test_step_accuracy), 2))
+        print("On Epoch Test F1 Micro: ", round(mean(test_step_f1_micro), 2))
+        print("On Epoch Test F1 Macro: ", round(mean(test_step_f1_macro), 2))
 
         self.scheduler.step()
 
@@ -384,8 +384,8 @@ class Trainer(object):
                                 max_epochs=50,
                                 default_root_dir=f'./checkpoints/flat_{model_path}_{loss}_result',
                                 callbacks = [checkpoint_callback, early_stop_callback],
-                                deterministic=True,
-                                logger=logger)
+                                logger=logger,
+                                deterministic=True)
 
             trainer.fit(model=model, datamodule=module)
             trainer.test(model=model, datamodule=module, ckpt_path='best')
