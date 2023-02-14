@@ -1,13 +1,17 @@
 import torch
 import pytorch_lightning as pl
 import torch.nn as nn
+import numpy as np
 
+from statistics import mean
+from tqdm import tqdm
 from models.bert import BERT
 from models.bert_cnn import BERT_CNN
 from models.bert_lstm import BERT_LSTM
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from torchmetrics.classification import MulticlassAccuracy
+from torchmetrics.classification import MulticlassF1Score
 
 class Flat_Tuning(pl.LightningModule):
     def __init__(self, lr, num_classes, model_path, log_loss):
@@ -32,6 +36,8 @@ class Flat_Tuning(pl.LightningModule):
         
         self.lr = lr
         self.accuracy_metric = MulticlassAccuracy(num_classes=num_classes)
+        self.f1_micro_metric = MulticlassF1Score(num_classes=num_classes, average='micro')
+        self.f1_macro_metric = MulticlassF1Score(num_classes=num_classes, average='macro')
         self.log_loss = log_loss
 
     def configure_optimizers(self):
@@ -43,7 +49,7 @@ class Flat_Tuning(pl.LightningModule):
         input_ids, binary_target, categorical_target = train_batch
 
         preds = self.model(input_ids=input_ids)
-        max_pred_idx = preds.argmax(1)
+        max_preds_idx = preds.argmax(1)
 
         if self.log_loss == 'binary':
             loss = self.criterion(preds, binary_target.float())
@@ -53,8 +59,10 @@ class Flat_Tuning(pl.LightningModule):
             loss = self.criterion(preds, categorical_target)
             target = categorical_target
 
-        accuracy = self.accuracy_metric(max_pred_idx, target)
-        self.log_dict({'train_loss': loss, 'train_accuracy': accuracy}, prog_bar=True, on_epoch=True)
+        accuracy = self.accuracy_metric(max_preds_idx, target)
+        f1_micro = self.f1_micro_metric(max_preds_idx, target)
+        f1_macro = self.f1_macro_metric(max_preds_idx, target)
+        self.log_dict({'train_loss': loss, 'train_accuracy': accuracy, 'train_f1_micro': f1_micro, 'train_f1_macro': f1_macro}, prog_bar=True, on_epoch=True)
 
         return loss
 
@@ -62,7 +70,7 @@ class Flat_Tuning(pl.LightningModule):
         input_ids, binary_target, categorical_target = valid_batch
 
         preds = self.model(input_ids=input_ids)
-        max_pred_idx = preds.argmax(1)
+        max_preds_idx = preds.argmax(1)
 
         if self.log_loss == 'binary':
             loss = self.criterion(preds, binary_target.float())
@@ -72,8 +80,10 @@ class Flat_Tuning(pl.LightningModule):
             loss = self.criterion(preds, categorical_target)
             target = categorical_target
 
-        accuracy = self.accuracy_metric(max_pred_idx, target)
-        self.log_dict({'val_loss': loss, 'val_accuracy': accuracy}, prog_bar=True, on_epoch=True)
+        accuracy = self.accuracy_metric(max_preds_idx, target)
+        f1_micro = self.f1_micro_metric(max_preds_idx, target)
+        f1_macro = self.f1_macro_metric(max_preds_idx, target)
+        self.log_dict({'val_loss': loss, 'val_accuracy': accuracy, 'val_f1_micro': f1_micro, 'val_f1_macro': f1_macro}, prog_bar=True, on_epoch=True)
 
         return loss
 
@@ -81,7 +91,7 @@ class Flat_Tuning(pl.LightningModule):
         input_ids, binary_target, categorical_target = test_batch
 
         preds = self.model(input_ids=input_ids)
-        max_pred_idx = preds.argmax(1)
+        max_preds_idx = preds.argmax(1)
 
         if self.log_loss == 'binary':
             loss = self.criterion(preds, binary_target.float())
@@ -91,20 +101,274 @@ class Flat_Tuning(pl.LightningModule):
             loss = self.criterion(preds, categorical_target)
             target = categorical_target
 
-        accuracy = self.accuracy_metric(max_pred_idx, target)
-        self.log_dict({'test_loss': loss, 'test_accuracy': accuracy}, prog_bar=True, on_epoch=True)
+        accuracy = self.accuracy_metric(max_preds_idx, target)
+        f1_micro = self.f1_micro_metric(max_preds_idx, target)
+        f1_macro = self.f1_macro_metric(max_preds_idx, target)
+        self.log_dict({'test_loss': loss, 'test_accuracy': accuracy, 'test_f1_micro': f1_micro, 'test_f1_macro': f1_macro}, prog_bar=True, on_epoch=True)
 
         return loss
 
 class Level_Tuning(object):
-    def __init__(self):
-        super(Level_Tuning, self).__init__()  
+    def __init__(self, module, seed, device, max_epochs, lr, model_path, log_loss, early_stop_patience, last_level_checkpoint=None):
+        super(Level_Tuning, self).__init__() 
+        np.random.seed(seed) 
+        torch.manual_seed(seed)
+
+        if device == 'cuda':
+            torch.cuda.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)
+            torch.backends.cudnn.deterministic = True
+
+        self.device = device
+        self.module = module
+        self.max_epochs = max_epochs
+        self.lr = lr
+        self.model_path = model_path
+        self.early_stop_patience = early_stop_patience
+
+        if log_loss == 'binary':
+            self.criterion = nn.BCEWithLogitsLoss()
+        
+        elif log_loss == 'categorical':
+            self.criterion == nn.CrossEntropyLoss()
+
+        # self.last_level_checkpoint = last_level_checkpoint
+
+    def initialize_model(self, num_classes):
+        if self.model_path == 'bert':
+            self.model = BERT(num_classes=num_classes)
+
+        elif self.model_path == 'bert-cnn':
+            self.model = BERT_CNN(num_classes=num_classes) 
+
+        elif self.model_path == 'bert-bilstm':
+            self.model = BERT_LSTM(num_classes=num_classes, bidirectional=True)
+
+        elif self.model_path == 'bert-lstm':
+            self.model = BERT_LSTM(num_classes=num_classes, bidirectional=False)
+
+        self.model.to(self.device)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, 
+                                                        start_factor=0.5, 
+                                                        total_iters=100)
+
+        # if self.last_level_checkpoint:
+        #     self.model.load_state_dict(torch.load(self.last_level_checkpoint))
         
     def fit(self):
-        pass
+        _, level_on_nodes_indexed = self.module.generate_hierarchy()
+        level_size = len(level_on_nodes_indexed)
+
+        patience = self.early_stop_patience
+        minimum_loss = 0
+        fail = 0
+
+        train_graph = []
+        val_graph = []
+
+        for epoch in range(self.max_epochs):
+            print("Epoch = ", (epoch + 1))
+
+            for level in range(level_size):
+                self.num_classes = len(level_on_nodes_indexed[level])
+                self.initialize_model(num_classes=self.num_classes)
+
+                self.train_set, self.valid_set = self.module.level_dataloader(stage='fit', level=level)
+
+                print("Level ", level)
+                print("=" * 50)
+
+                print("Training Stage")
+                train_loss, train_accuracy, train_f1_micro, train_f1_macro = self.training_step()
+
+                print("Validation Stage")
+                val_loss, val_accuracy, val_f1_micro, val_f1_macro = self.validation_step()
+                print("=" * 50)
+
+                if val_loss > minimum_loss:
+                    fail = 0
+                    minimum_loss = val_loss
+            
+                else:
+                    fail += 1
+
+            if fail == patience:
+                break
 
     def test(self):
-        pass
+        _, level_on_nodes_indexed = self.module.generate_hierarchy()
+        level_size = len(level_on_nodes_indexed)
+
+        test_graph = []
+
+        for level in range(level_size):
+            self.test_set = self.module.level_dataloader(stage='test', level=level)
+            print("Level ", level)
+            print("=" * 50)
+
+            print("Test Stage")
+            test_loss, test_accuracy, test_f1_micro, test_f1_macro = self.test_step()
+            print("=" * 50)
+
+    def training_step(self):
+        self.model.train()
+        self.model.zero_grad()
+
+        train_step_loss = []
+        train_step_accuracy = []
+        train_step_f1_micro = []
+        train_step_f1_macro = []
+
+        training_progress = tqdm(self.train_set)
+
+        for train_batch in training_progress:
+            input_ids, binary_target, categorical_target = train_batch
+
+            input_ids = input_ids.to(self.device)
+            binary_target = binary_target.to(self.device)
+            categorical_target = categorical_target.to(self.device)
+
+            preds = self.model(input_ids=input_ids)
+            max_preds_idx = preds.argmax(1)
+
+            if self.log_loss == 'binary':
+                loss = self.criterion(preds, binary_target.float())
+                target = binary_target.argmax(1)
+
+            elif self.log_loss == 'categorical':
+                loss = self.criterion(preds, categorical_target)
+                target = categorical_target
+
+            accuracy, f1_micro, f1_macro = self.scoring_result(max_preds_idx=max_preds_idx, target=target)
+            train_step_accuracy.append(accuracy)
+            train_step_f1_micro.append(f1_micro)
+            train_step_f1_macro.append(f1_macro)
+            train_step_loss.append(loss.item())
+            
+            training_progress.set_description("Train Step Loss : " + str(round(loss.item(), 3)) + 
+                                        " | Train Step Accuracy : " + str(round(accuracy, 3)) + 
+                                        " | Train Step F1 Micro : " + str(round(f1_micro, 3)) +
+                                        " | Train Step F1 Macro : " + str(round(f1_macro, 3)))
+
+            loss.backward()
+            self.optimizer.step()
+
+        print("On Epoch Train Loss: ", round(mean(train_step_loss), 3))
+        print("On Epoch Train Accuracy: ", round(mean(train_step_accuracy), 3))
+        print("On Epoch Train F1 Micro: ", round(mean(train_step_f1_micro), 3))
+        print("On Epoch Train F1 Macro: ", round(mean(train_step_f1_macro), 3))
+
+        self.scheduler.step()
+
+        return mean(train_step_loss), mean(train_step_accuracy), mean(train_step_f1_micro), mean(train_step_f1_macro)
+
+    def validation_step(self):
+        with torch.no_grad():
+            val_step_loss = []
+            val_step_accuracy = []
+            val_step_f1_micro = []
+            val_step_f1_macro = []
+
+            self.model.eval()
+            validation_progress = tqdm(self.valid_set)
+
+            for valid_batch in validation_progress:
+                input_ids, binary_target, categorical_target = valid_batch
+
+                input_ids = input_ids.to(self.device)
+                binary_target = binary_target.to(self.device)
+                categorical_target = categorical_target.to(self.device)
+
+                preds = self.model(input_ids=input_ids)
+                max_preds_idx = preds.argmax(1)
+
+                if self.log_loss == 'binary':
+                    loss = self.criterion(preds, binary_target.float())
+                    target = binary_target.argmax(1)
+
+                elif self.log_loss == 'categorical':
+                    loss = self.criterion(preds, categorical_target)
+                    target = categorical_target
+
+                accuracy, f1_micro, f1_macro = self.scoring_result(max_preds_idx=max_preds_idx, target=target)
+                val_step_accuracy.append(accuracy)
+                val_step_f1_micro.append(f1_micro)
+                val_step_f1_macro.append(f1_macro)
+                val_step_loss.append(loss.item())
+                
+                validation_progress.set_description("Validation Step Loss : " + str(round(loss.item(), 3)) + 
+                                            " | Validation Step Accuracy : " + str(round(accuracy, 3)) + 
+                                            " | Validation Step F1 Micro : " + str(round(f1_micro, 3)) +
+                                            " | Validation Step F1 Macro : " + str(round(f1_macro, 3)))
+
+        print("On Epoch Validation Loss: ", round(mean(val_step_loss), 3))
+        print("On Epoch Validation Accuracy: ", round(mean(val_step_accuracy), 3))
+        print("On Epoch Validation F1 Micro: ", round(mean(val_step_f1_micro), 3))
+        print("On Epoch Validation F1 Macro: ", round(mean(val_step_f1_macro), 3))
+
+        self.scheduler.step()
+
+        return mean(val_step_loss), mean(val_step_accuracy), mean(val_step_f1_micro), mean(val_step_f1_macro)
+
+    def test_step(self):
+        with torch.no_grad():
+            test_step_loss = []
+            test_step_accuracy = []
+            test_step_f1_micro = []
+            test_step_f1_macro = []
+
+            self.model.eval()
+            test_progress = tqdm(self.test_set)
+
+            for test_batch in test_progress:
+                input_ids, binary_target, categorical_target = test_batch
+
+                input_ids = input_ids.to(self.device)
+                binary_target = binary_target.to(self.device)
+                categorical_target = categorical_target.to(self.device)
+
+                preds = self.model(input_ids=input_ids)
+                max_preds_idx = preds.argmax(1)
+
+                if self.log_loss == 'binary':
+                    loss = self.criterion(preds, binary_target.float())
+                    target = binary_target.argmax(1)
+
+                elif self.log_loss == 'categorical':
+                    loss = self.criterion(preds, categorical_target)
+                    target = categorical_target
+
+                accuracy, f1_micro, f1_macro = self.scoring_result(max_preds_idx=max_preds_idx, target=target)
+                test_step_accuracy.append(accuracy)
+                test_step_f1_micro.append(f1_micro)
+                test_step_f1_macro.append(f1_macro)
+                test_step_loss.append(loss.item())
+                
+                test_progress.set_description("Test Step Loss : " + str(round(loss.item(), 3)) + 
+                                            " | Test Step Accuracy : " + str(round(accuracy, 3)) + 
+                                            " | Test Step F1 Micro : " + str(round(f1_micro, 3)) +
+                                            " | Test Step F1 Macro : " + str(round(f1_macro, 3)))
+
+        print("On Epoch Validation Loss: ", round(mean(test_step_loss), 3))
+        print("On Epoch Validation Accuracy: ", round(mean(test_step_accuracy), 3))
+        print("On Epoch Validation F1 Micro: ", round(mean(test_step_f1_micro), 3))
+        print("On Epoch Validation F1 Macro: ", round(mean(test_step_f1_macro), 3))
+
+        self.scheduler.step()
+
+        return mean(test_step_loss), mean(test_step_accuracy), mean(test_step_f1_micro), mean(test_step_f1_macro)
+
+    def scoring_result(self, max_preds_idx, target):
+        accuracy_metric = MulticlassAccuracy(num_classes=self.num_classes)
+        f1_micro_metric = MulticlassF1Score(num_classes=self.num_classes, average='micro')
+        f1_macro_metric = MulticlassF1Score(num_classes=self.num_classes, average='macro')
+
+        accuracy = accuracy_metric(max_preds_idx, target)
+        f1_micro = f1_micro_metric(max_preds_idx, target)
+        f1_macro = f1_macro_metric(max_preds_idx, target)
+
+        return accuracy, f1_micro, f1_macro
 
 class Trainer(object):
     def __init__(self, module, model_path, method, loss):
@@ -127,15 +391,17 @@ class Trainer(object):
             trainer.test(model=model, datamodule=module, ckpt_path='best')
         
         elif method == 'level':
-            _, level_on_nodes_indexed = module.generate_hierarchy()
-            level_size = len(level_on_nodes_indexed)
+            trainer = Level_Tuning(module=module,
+                                seed=42, 
+                                device='cuda', 
+                                max_epochs=50,
+                                lr=2e-5, 
+                                model_path=model_path, 
+                                log_loss=loss,
+                                early_stop_patience=3)
 
-            for level in range(level_size):
-                num_classes = len(level_on_nodes_indexed[level])
-                trainer = Level_Tuning()
-                
-                trainer.fit()
-                trainer.test()
+            trainer.fit()
+            trainer.test()
 
         elif method == 'section':
             pass
