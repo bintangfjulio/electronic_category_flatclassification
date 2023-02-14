@@ -1,3 +1,4 @@
+import os
 import torch
 import pytorch_lightning as pl
 import torch.nn as nn
@@ -125,6 +126,7 @@ class Level_Tuning(object):
         self.max_epochs = max_epochs
         self.lr = lr
         self.model_path = model_path
+        self.log_loss = log_loss
         self.early_stop_patience = early_stop_patience
 
         if log_loss == 'binary':
@@ -221,11 +223,14 @@ class Level_Tuning(object):
             # if fail == patience:
                 # break
         
+        if not os.path.exists(f'logs/level_{self.model_path}_{self.log_loss}_result'):
+            os.makedirs(f'logs/level_{self.model_path}_{self.log_loss}_result')
+        
         train_graph = pd.DataFrame({'epoch': train_epoch, 'level': train_level, 'accuracy': train_accuracy_graph, 'loss': train_loss_graph, 'f1_micro': train_f1_micro_graph, 'f1_macro': train_f1_macro_graph})
         valid_graph = pd.DataFrame({'epoch': val_epoch, 'level': val_level, 'accuracy': val_accuracy_graph, 'loss': val_loss_graph, 'f1_micro': val_f1_micro_graph, 'f1_macro': val_f1_macro_graph})
         
-        train_graph.to_csv('train_graph.csv', index=False, encoding='utf-8')
-        valid_graph.to_csv('valid_graph.csv, index=False, encoding='utf-8')
+        train_graph.to_csv(f'logs/level_{self.model_path}_{self.log_loss}_result/train_graph.csv', index=False, encoding='utf-8')
+        valid_graph.to_csv(f'logs/level_{self.model_path}_{self.log_loss}_result/valid_graph.csv', index=False, encoding='utf-8')
 
     def test(self):
         _, level_on_nodes_indexed = self.module.generate_hierarchy()
@@ -251,9 +256,12 @@ class Level_Tuning(object):
             test_f1_micro_graph.append(test_f1_micro)
             test_f1_macro_graph.append(test_f1_macro)
             test_level.append(level)
+                           
+        if not os.path.exists(f'logs/level_{self.model_path}_{self.log_loss}_result'):
+            os.makedirs(f'logs/level_{self.model_path}_{self.log_loss}_result')
                           
         test_graph = pd.DataFrame({'level': test_level, 'accuracy': test_accuracy_graph, 'loss': test_loss_graph, 'f1_micro': test_f1_micro_graph, 'f1_macro': test_f1_macro_graph})
-        test_graph.to_csv('test_graph.csv, index=False, encoding='utf-8')
+        test_graph.to_csv(f'logs/level_{self.model_path}_{self.log_loss}_result/test_graph.csv', index=False, encoding='utf-8')
                            
     def training_step(self):
         self.model.train()
