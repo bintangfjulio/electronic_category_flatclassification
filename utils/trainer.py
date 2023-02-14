@@ -161,7 +161,7 @@ class Level_Tuning(object):
         level_size = len(level_on_nodes_indexed)
 
         patience = self.early_stop_patience
-        minimum_loss = 0
+        minimum_loss = 1.00
         fail = 0
 
         train_graph = []
