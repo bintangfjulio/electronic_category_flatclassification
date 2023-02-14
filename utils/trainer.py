@@ -186,7 +186,7 @@ class Level_Tuning(object):
                 val_loss, val_accuracy, val_f1_micro, val_f1_macro = self.validation_step()
                 print("=" * 50)
 
-                if val_loss > minimum_loss:
+                if val_loss < minimum_loss:
                     fail = 0
                     minimum_loss = val_loss
             
