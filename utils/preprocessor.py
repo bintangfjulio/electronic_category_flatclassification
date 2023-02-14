@@ -99,26 +99,27 @@ class Preprocessor(pl.LightningDataModule):
                     categorical_target.append(leveled_categorical_label)
 
                 elif method == 'section':
-                    nodes = data[3].lower().split(" > ")
+                    pass
+                    # nodes = data[3].lower().split(" > ")
 
-                    for depth, node in enumerate(nodes[:-1]):
-                        child = nodes[depth + 1]
-                        child_on_parent = list(section_parent_child[node])
-                        child_idx = child_on_parent.index(child)
+                    # for depth, node in enumerate(nodes[:-1]):
+                        # child = nodes[depth + 1]
+                        # child_on_parent = list(section_parent_child[node])
+                        # child_idx = child_on_parent.index(child)
 
-                        hierarchical_binary_label = [0] * len(child_on_parent)
-                        hierarchical_binary_label[child_idx] = 1
+                        # hierarchical_binary_label = [0] * len(child_on_parent)
+                        # hierarchical_binary_label[child_idx] = 1
 
-                        hierarchical_categorical_label = child_idx
+                        # hierarchical_categorical_label = child_idx
                         
-                        parent_idx = parents_idx[node]
+                        # parent_idx = parents_idx[node]
 
-                        if 'input_ids' not in section_by_hierarchy[parent_idx]:
-                            section_by_hierarchy[parent_idx] = {'input_ids': [], 'binary_target': [], 'categorical_target': []}
+                        # if 'input_ids' not in section_by_hierarchy[parent_idx]:
+                            # section_by_hierarchy[parent_idx] = {'input_ids': [], 'binary_target': [], 'categorical_target': []}
                         
-                        section_by_hierarchy[parent_idx]['input_ids'].append(token['input_ids'])
-                        section_by_hierarchy[parent_idx]['binary_target'].append(hierarchical_binary_label)
-                        section_by_hierarchy[parent_idx]['categorical_target'].append(hierarchical_categorical_label)
+                        # section_by_hierarchy[parent_idx]['input_ids'].append(token['input_ids'])
+                        # section_by_hierarchy[parent_idx]['binary_target'].append(hierarchical_binary_label)
+                        # section_by_hierarchy[parent_idx]['categorical_target'].append(hierarchical_categorical_label)
         
             if method == 'flat' or method == 'level':
                 if queue == 0:
