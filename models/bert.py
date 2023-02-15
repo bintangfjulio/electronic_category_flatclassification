@@ -3,7 +3,7 @@ import pytorch_lightning as pl
 
 from transformers import BertModel
 
-class BERT(nn.Module, pl.LightningModule):
+class BERT(pl.LightningModule):
     def __init__(self, num_classes, dropout=0.1, input_size=768, hidden_size=768):
         super(BERT, self).__init__()
         self.pretrained_bert = BertModel.from_pretrained('indolem/indobert-base-uncased')

@@ -54,9 +54,9 @@ class Preprocessor(pl.LightningDataModule):
     def get_max_length(self, dataset, extra_length=10):
         sentences_token = []
         
-        for data in dataset.values.tolist():
-            data = str(data[0]).split()
-            sentences_token.append(data)
+        for row in dataset.values.tolist():
+            row = str(row[0]).split()
+            sentences_token.append(row)
 
         token_length = [len(token) for token in sentences_token]
         max_length = max(token_length) + extra_length
@@ -64,10 +64,8 @@ class Preprocessor(pl.LightningDataModule):
         return max_length
     
     def preprocessing_data(self, set_queue, max_length, method, level): 
-        section_parent_child, level_on_nodes_indexed = self.generate_hierarchy()
-        parents_idx = {parent: index for index, parent in enumerate(section_parent_child.keys())}        
-        section_by_hierarchy = [[] for i in range(len(parents_idx))]
-
+        level_on_nodes_indexed, idx_on_section, section_on_idx = self.generate_hierarchy()
+    
         for queue, dataset in enumerate(set_queue):
             input_ids, binary_target, categorical_target = [], [], []
 
@@ -79,12 +77,12 @@ class Preprocessor(pl.LightningDataModule):
 
             progress_preprocessing = tqdm(dataset.values.tolist())
 
-            for data in progress_preprocessing:
-                text = self.text_cleaning(str(data[0]))
+            for row in progress_preprocessing:
+                text = self.text_cleaning(str(row[0]))
                 token = self.tokenizer(text=text, max_length=max_length, padding="max_length", truncation=True)  
 
                 if method == 'flat':
-                    last_node = data[3].split(" > ")[-1].lower()
+                    last_node = row[3].split(" > ")[-1].lower()
 
                     flat_binary_label = [0] * len(level_on_nodes_indexed[2])
                     flat_binary_label[level_on_nodes_indexed[2][last_node]] = 1
@@ -96,7 +94,7 @@ class Preprocessor(pl.LightningDataModule):
                     categorical_target.append(flat_categorical_label)
                 
                 elif method == 'level':
-                    node_on_level = data[3].split(" > ")[level].lower()
+                    node_on_level = row[3].split(" > ")[level].lower()
                     member_on_level = level_on_nodes_indexed[level]
                     node_idx = member_on_level[node_on_level]
 
@@ -110,28 +108,28 @@ class Preprocessor(pl.LightningDataModule):
                     categorical_target.append(leveled_categorical_label)
 
                 elif method == 'section':
-                    pass
-                    # nodes = data[3].lower().split(" > ")
+                    nodes = row[3].lower().split(" > ")
+                    
+                    binary_encoded = {}
+                    categorical_encoded = {}
 
-                    # for depth, node in enumerate(nodes[:-1]):
-                        # child = nodes[depth + 1]
-                        # child_on_parent = list(section_parent_child[node])
-                        # child_idx = child_on_parent.index(child)
+                    for node in nodes:
+                        section_idx = section_on_idx[node]
+                        nodes_on_section = idx_on_section[section_idx]
+                        node_idx = nodes_on_section.index(node)
 
-                        # hierarchical_binary_label = [0] * len(child_on_parent)
-                        # hierarchical_binary_label[child_idx] = 1
+                        sectioned_binary_label = [0] * len(nodes_on_section)
+                        sectioned_binary_label[node_idx] = 1
 
-                        # hierarchical_categorical_label = child_idx
-                        
-                        # parent_idx = parents_idx[node]
+                        sectioned_categorical_label = node_idx
 
-                        # if 'input_ids' not in section_by_hierarchy[parent_idx]:
-                            # section_by_hierarchy[parent_idx] = {'input_ids': [], 'binary_target': [], 'categorical_target': []}
-                        
-                        # section_by_hierarchy[parent_idx]['input_ids'].append(token['input_ids'])
-                        # section_by_hierarchy[parent_idx]['binary_target'].append(hierarchical_binary_label)
-                        # section_by_hierarchy[parent_idx]['categorical_target'].append(hierarchical_categorical_label)
-        
+                        binary_encoded[section_idx] = sectioned_binary_label
+                        categorical_encoded[section_idx] = sectioned_categorical_label
+
+                    input_ids.append(token['input_ids'])
+                    binary_target.append(binary_encoded)
+                    categorical_target.append(categorical_encoded)
+                
             if method == 'flat' or method == 'level':
                 if queue == 0:
                     train_set, valid_set = self.train_valid_split(input_ids, binary_target, categorical_target)
@@ -147,18 +145,6 @@ class Preprocessor(pl.LightningDataModule):
 
             elif method == 'section':
                 pass
-                # sectioned_dataset = []
-
-                # for section in section_by_hierarchy:
-                #     sectioned_input_ids = section['input_ids']
-                #     sectioned_binary_target = section['binary_target']
-                #     sectioned_categorical_target = section['categorical_target']
-                    
-                #     train_set, valid_set, test_set = self.dataset_splitting(sectioned_input_ids, sectioned_binary_target, sectioned_categorical_target)
-                #     sectioned_dataset.append([train_set, valid_set, test_set])
-
-                # with open("datasets/hierarchical_dataset.pkl", "wb") as hierarchical_preprocessed:
-                #     pickle.dump(sectioned_dataset, hierarchical_preprocessed, protocol=pickle.HIGHEST_PROTOCOL)
 
     def generate_hierarchy(self):
         section_parent_child = {}
@@ -188,17 +174,17 @@ class Preprocessor(pl.LightningDataModule):
                 level_on_nodes[level] += [last_node]
 
         # arrange section
-        root_section = {'root': set(level_on_nodes[0])}
-        root_section.update(section_parent_child)
+        set_root_section = {'root': set(level_on_nodes[0])}
+        set_root_section.update(section_parent_child)
 
-        section_on_id = {}
-        id_on_section = {}
+        section_on_idx = {}
+        idx_on_section = {}
 
-        for idx, (_, values) in enumerate(root_section.items()):
-            id_on_section[idx] = list(values)
+        for idx, (_, node_members) in enumerate(set_root_section.items()):
+            idx_on_section[idx] = list(node_members)
 
-            for item in values:
-                section_on_id[item] = idx
+            for node in node_members:
+                section_on_idx[node] = idx
 
         # arrange level
         level_on_nodes_indexed = {}
@@ -206,12 +192,12 @@ class Preprocessor(pl.LightningDataModule):
         for level, node_members in level_on_nodes.items():
             node_with_idx = {}
 
-            for node_idx, node in enumerate(node_members):
-                node_with_idx[node] = node_idx
+            for idx, node in enumerate(node_members):
+                node_with_idx[node] = idx
             
             level_on_nodes_indexed[level] = node_with_idx
 
-        return section_parent_child, level_on_nodes_indexed, id_on_section, section_on_id
+        return level_on_nodes_indexed, idx_on_section, section_on_idx
 
     def text_cleaning(self, text):
         text = text.lower()
