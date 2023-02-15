@@ -361,7 +361,7 @@ class Level_Tuning(object):
                 print("Level ", level)
                 print("=" * 50)
 
-                print("Training Stage")
+                print("Training Stage...")
                 train_loss, train_accuracy, train_f1_micro, train_f1_macro = self.training_step()
                 
                 train_accuracy_graph.append(train_accuracy)
@@ -371,7 +371,7 @@ class Level_Tuning(object):
                 train_epoch.append(epoch)
                 train_level.append(level)
 
-                print("Validation Stage")
+                print("Validation Stage...")
                 val_loss, val_accuracy, val_f1_micro, val_f1_macro = self.validation_step()
                 
                 val_accuracy_graph.append(val_accuracy)
@@ -416,7 +416,7 @@ class Level_Tuning(object):
             print("Level ", level)
             print("=" * 50)
 
-            print("Test Stage")
+            print("Test Stage...")
             test_loss, test_accuracy, test_f1_micro, test_f1_macro = self.test_step()
             print("=" * 50)
             

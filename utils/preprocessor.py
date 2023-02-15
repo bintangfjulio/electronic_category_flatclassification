@@ -7,6 +7,7 @@ import requests
 import pytorch_lightning as pl
 import pandas as pd
 
+from tqdm import tqdm
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from transformers import BertTokenizer
@@ -68,7 +69,15 @@ class Preprocessor(pl.LightningDataModule):
         for queue, dataset in enumerate(set_queue):
             input_ids, binary_target, categorical_target = [], [], []
 
-            for data in dataset.values.tolist():
+            if queue == 0:
+                print("\nQueue Train & Validation Set...")
+
+            elif queue == 1:
+                print("\nQueue Test Set...")
+
+            progress_preprocessing = tqdm(dataset.values.tolist())
+
+            for data in progress_preprocessing:
                 text = self.text_cleaning(str(data[0]))
                 token = self.tokenizer(text=text, max_length=max_length, padding="max_length", truncation=True)  
 
@@ -157,9 +166,9 @@ class Preprocessor(pl.LightningDataModule):
             for path in tree:
                 nodes = path[:-1].lower().split(" > ")
 
-                for depth, node in enumerate(nodes):
-                    if depth > 0:
-                        parent = nodes[depth - 1]
+                for level, node in enumerate(nodes):
+                    if level > 0:
+                        parent = nodes[level - 1]
                         try:
                             section_parent_child[parent].add(node)
                         except:
