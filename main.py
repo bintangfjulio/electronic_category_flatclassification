@@ -12,4 +12,6 @@ if __name__ == "__main__":
     config = vars(args)
 
     module = Preprocessor(batch_size=32, method=config['method']) 
+
+    module.preprocessor()
     Trainer(module=module, model_path=config['model'], method=config['method'], loss=config['loss'])

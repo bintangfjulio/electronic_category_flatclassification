@@ -14,6 +14,8 @@ from transformers import BertTokenizer
 from torch.utils.data import TensorDataset, DataLoader
 from utils.tree_creator import Tree_Creator
 
+import sys
+
 class Preprocessor(pl.LightningDataModule):
     def __init__(self, batch_size, method):
         super(Preprocessor, self).__init__()
@@ -70,10 +72,10 @@ class Preprocessor(pl.LightningDataModule):
             input_ids, binary_target, categorical_target = [], [], []
 
             if queue == 0:
-                print("\nQueue Train & Validation Set...")
+                print("\nOn Queue Train & Validation Set...")
 
             elif queue == 1:
-                print("\nQueue Test Set...")
+                print("\nOn Queue Test Set...")
 
             progress_preprocessing = tqdm(dataset.values.tolist())
 
@@ -166,6 +168,7 @@ class Preprocessor(pl.LightningDataModule):
             for path in tree:
                 nodes = path[:-1].lower().split(" > ")
 
+                # arrange section
                 for level, node in enumerate(nodes):
                     if level > 0:
                         parent = nodes[level - 1]
@@ -175,6 +178,7 @@ class Preprocessor(pl.LightningDataModule):
                             section_parent_child[parent] = set()
                             section_parent_child[parent].add(node)
 
+                # arrange level
                 level = len(nodes) - 1
                 last_node = nodes[-1]
 
@@ -183,6 +187,20 @@ class Preprocessor(pl.LightningDataModule):
 
                 level_on_nodes[level] += [last_node]
 
+        # arrange section
+        root_section = {'root': set(level_on_nodes[0])}
+        root_section.update(section_parent_child)
+
+        section_on_id = {}
+        id_on_section = {}
+
+        for idx, (_, values) in enumerate(root_section.items()):
+            id_on_section[idx] = list(values)
+
+            for item in values:
+                section_on_id[item] = idx
+
+        # arrange level
         level_on_nodes_indexed = {}
 
         for level, node_members in level_on_nodes.items():
@@ -193,7 +211,7 @@ class Preprocessor(pl.LightningDataModule):
             
             level_on_nodes_indexed[level] = node_with_idx
 
-        return section_parent_child, level_on_nodes_indexed
+        return section_parent_child, level_on_nodes_indexed, id_on_section, section_on_id
 
     def text_cleaning(self, text):
         text = text.lower()
