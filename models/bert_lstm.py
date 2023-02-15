@@ -36,3 +36,4 @@ class BERT_LSTM(pl.LightningModule):
         preds = self.output_layer(self.dropout(self.tanh(lstm_output)))
         
         return preds
+        

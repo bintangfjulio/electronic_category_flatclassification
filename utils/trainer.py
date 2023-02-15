@@ -332,9 +332,9 @@ class Level_Tuning(object):
         level_on_nodes_indexed, _, _ = self.module.generate_hierarchy()
         level_size = len(level_on_nodes_indexed)
 
-        # patience = self.early_stop_patience
-        # minimum_loss = 1.00
-        # fail = 0
+        fail = 0
+        patience = self.early_stop_patience
+        minimum_loss = 1.00
 
         train_accuracy_graph = []
         train_loss_graph = []
@@ -382,15 +382,16 @@ class Level_Tuning(object):
                 val_level.append(level)
                 print("=" * 50)
 
-                # if round(val_loss, 2) < round(minimum_loss, 2):
-                    # fail = 0
-                    # minimum_loss = val_loss
-            
-                # else:
-                    # fail += 1
+                if(level == 2):
+                    if round(val_loss, 2) < round(minimum_loss, 2):
+                        fail = 0
+                        minimum_loss = val_loss
+                        
+                    else:
+                        fail += 1
 
-            # if fail == patience:
-                # break
+            if fail == patience:
+                break
         
         if not os.path.exists(f'logs/level_{self.model_path}_{self.log_loss}_result'):
             os.makedirs(f'logs/level_{self.model_path}_{self.log_loss}_result')
@@ -440,7 +441,7 @@ class Trainer(object):
             model = Flat_Tuning(lr=2e-5, num_classes=module.count_flat_classes(), model_path=model_path, log_loss=loss)
             checkpoint_callback = ModelCheckpoint(dirpath=f'./checkpoints/flat_{model_path}_{loss}_result', monitor='val_loss')
             logger = TensorBoardLogger('logs', name=f'flat_{model_path}_{loss}_result')
-            early_stop_callback = EarlyStopping(monitor='val_loss', min_delta=0.00, check_on_train_epoch_end=1, patience=3)
+            early_stop_callback = EarlyStopping(monitor='val_loss', min_delta=0.00, check_on_train_epoch_end=1, patience=5)
 
             trainer = pl.Trainer(accelerator='gpu',
                                 max_epochs=50,
@@ -460,7 +461,7 @@ class Trainer(object):
                                 lr=2e-5, 
                                 model_path=model_path, 
                                 log_loss=loss,
-                                early_stop_patience=3)
+                                early_stop_patience=5)
 
             trainer.fit()
             trainer.test()
