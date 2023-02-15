@@ -14,8 +14,6 @@ from transformers import BertTokenizer
 from torch.utils.data import TensorDataset, DataLoader
 from utils.tree_creator import Tree_Creator
 
-import sys
-
 class Preprocessor(pl.LightningDataModule):
     def __init__(self, batch_size, method):
         super(Preprocessor, self).__init__()
@@ -39,8 +37,8 @@ class Preprocessor(pl.LightningDataModule):
         if not os.path.exists(f"datasets/{self.method}_level_{str(level)}_train_set.pt") and not os.path.exists(f"datasets/{self.method}_level_{str(level)}_valid_set.pt") and not os.path.exists(f"datasets/{self.method}_level_{str(level)}_test_set.pt"):
             print("\nPreprocessing Data...")
             max_length = self.get_max_length(self.dataset)
-            train_set, test_set = self.train_test_split(self.dataset)
-            self.preprocessing_data(set_queue=[train_set, test_set], max_length=max_length, method=self.method, level=level)
+            # train_set, test_set = self.train_test_split(self.dataset)
+            self.preprocessing_data(dataset=self.dataset, max_length=max_length, method=self.method, level=level)
             print('[ Preprocessing Completed ]\n')
         
         print("\nLoading Data...")
@@ -63,88 +61,81 @@ class Preprocessor(pl.LightningDataModule):
         
         return max_length
     
-    def preprocessing_data(self, set_queue, max_length, method, level): 
+    def preprocessing_data(self, dataset, max_length, method, level): 
         level_on_nodes_indexed, idx_on_section, section_on_idx = self.generate_hierarchy()
     
-        for queue, dataset in enumerate(set_queue):
-            input_ids, binary_target, categorical_target = [], [], []
+        # for queue, dataset in enumerate(set_queue):
+        input_ids, binary_target, categorical_target = [], [], []
 
-            if queue == 0:
-                print("\nOn Queue Train & Validation Set...")
+        # if queue == 0:
+        #     print("\nOn Queue Train & Validation Set...")
 
-            elif queue == 1:
-                print("\nOn Queue Test Set...")
+        # elif queue == 1:
+        #     print("\nOn Queue Test Set...")
 
-            progress_preprocessing = tqdm(dataset.values.tolist())
+        progress_preprocessing = tqdm(dataset.values.tolist())
 
-            for row in progress_preprocessing:
-                text = self.text_cleaning(str(row[0]))
-                token = self.tokenizer(text=text, max_length=max_length, padding="max_length", truncation=True)  
+        for row in progress_preprocessing:
+            text = self.text_cleaning(str(row[0]))
+            token = self.tokenizer(text=text, max_length=max_length, padding="max_length", truncation=True)  
 
-                if method == 'flat':
-                    last_node = row[3].split(" > ")[-1].lower()
+            if method == 'flat':
+                last_node = row[3].split(" > ")[-1].lower()
 
-                    flat_binary_label = [0] * len(level_on_nodes_indexed[2])
-                    flat_binary_label[level_on_nodes_indexed[2][last_node]] = 1
-                    
-                    flat_categorical_label = level_on_nodes_indexed[2][last_node]
-
-                    input_ids.append(token['input_ids'])
-                    binary_target.append(flat_binary_label)
-                    categorical_target.append(flat_categorical_label)
+                flat_binary_label = [0] * len(level_on_nodes_indexed[2])
+                flat_binary_label[level_on_nodes_indexed[2][last_node]] = 1
                 
-                elif method == 'level':
-                    node_on_level = row[3].split(" > ")[level].lower()
-                    member_on_level = level_on_nodes_indexed[level]
-                    node_idx = member_on_level[node_on_level]
+                flat_categorical_label = level_on_nodes_indexed[2][last_node]
 
-                    leveled_binary_label = [0] * len(member_on_level)
-                    leveled_binary_label[node_idx] = 1
+                input_ids.append(token['input_ids'])
+                binary_target.append(flat_binary_label)
+                categorical_target.append(flat_categorical_label)
+            
+            elif method == 'level':
+                node_on_level = row[3].split(" > ")[level].lower()
+                member_on_level = level_on_nodes_indexed[level]
+                node_idx = member_on_level[node_on_level]
 
-                    leveled_categorical_label = node_idx
+                leveled_binary_label = [0] * len(member_on_level)
+                leveled_binary_label[node_idx] = 1
 
-                    input_ids.append(token['input_ids'])
-                    binary_target.append(leveled_binary_label)
-                    categorical_target.append(leveled_categorical_label)
+                leveled_categorical_label = node_idx
 
-                elif method == 'section':
-                    nodes = row[3].lower().split(" > ")
-                    
-                    binary_encoded = {}
-                    categorical_encoded = {}
-
-                    for node in nodes:
-                        section_idx = section_on_idx[node]
-                        nodes_on_section = idx_on_section[section_idx]
-                        node_idx = nodes_on_section.index(node)
-
-                        sectioned_binary_label = [0] * len(nodes_on_section)
-                        sectioned_binary_label[node_idx] = 1
-
-                        sectioned_categorical_label = node_idx
-
-                        binary_encoded[section_idx] = sectioned_binary_label
-                        categorical_encoded[section_idx] = sectioned_categorical_label
-
-                    input_ids.append(token['input_ids'])
-                    binary_target.append(binary_encoded)
-                    categorical_target.append(categorical_encoded)
-                
-            if method == 'flat' or method == 'level':
-                if queue == 0:
-                    train_set, valid_set = self.train_valid_split(input_ids, binary_target, categorical_target)
-                    torch.save(train_set, f"datasets/{self.method}_level_{str(level)}_train_set.pt")
-                    torch.save(valid_set, f"datasets/{self.method}_level_{str(level)}_valid_set.pt")
-                    
-                elif queue == 1:
-                    input_ids = torch.tensor(input_ids)
-                    binary_target = torch.tensor(binary_target)
-                    categorical_target = torch.tensor(categorical_target)
-                    test_set = TensorDataset(input_ids, binary_target, categorical_target)
-                    torch.save(test_set, f"datasets/{self.method}_level_{str(level)}_test_set.pt")
+                input_ids.append(token['input_ids'])
+                binary_target.append(leveled_binary_label)
+                categorical_target.append(leveled_categorical_label)
 
             elif method == 'section':
-                pass
+                nodes = row[3].lower().split(" > ")
+                
+                binary_encoded = {}
+                categorical_encoded = {}
+
+                for node in nodes:
+                    section_idx = section_on_idx[node]
+                    nodes_on_section = idx_on_section[section_idx]
+                    node_idx = nodes_on_section.index(node)
+
+                    sectioned_binary_label = [0] * len(nodes_on_section)
+                    sectioned_binary_label[node_idx] = 1
+
+                    sectioned_categorical_label = node_idx
+
+                    binary_encoded[section_idx] = sectioned_binary_label
+                    categorical_encoded[section_idx] = sectioned_categorical_label
+
+                input_ids.append(token['input_ids'])
+                binary_target.append(binary_encoded)
+                categorical_target.append(categorical_encoded)
+                
+        if method == 'section':
+            pass
+
+        else:
+            train_set, valid_set, test_set = self.dataset_splitting(input_ids, binary_target, categorical_target)
+            torch.save(train_set, f"datasets/{self.method}_level_{str(level)}_train_set.pt")
+            torch.save(valid_set, f"datasets/{self.method}_level_{str(level)}_valid_set.pt")
+            torch.save(test_set, f"datasets/{self.method}_level_{str(level)}_test_set.pt")
 
     def generate_hierarchy(self):
         section_parent_child = {}
@@ -213,35 +204,40 @@ class Preprocessor(pl.LightningDataModule):
 
         return text
 
-    def train_test_split(self, dataset):
-        dataset = dataset.sample(frac=1)
-        dataset_size = dataset.shape[0]
-        train_size = int(dataset_size * 0.8)
+    # def train_test_split(self, dataset):
+    #     dataset = dataset.sample(frac=1)
+    #     dataset_size = dataset.shape[0]
+    #     train_size = int(dataset_size * 0.8)
 
-        train_set = dataset.iloc[:train_size, :]
-        test_set = dataset.iloc[train_size:, :]
+    #     train_set = dataset.iloc[:train_size, :]
+    #     test_set = dataset.iloc[train_size:, :]
 
-        train_set = pd.DataFrame(train_set)
-        test_set = pd.DataFrame(test_set)
+    #     train_set = pd.DataFrame(train_set)
+    #     test_set = pd.DataFrame(test_set)
 
-        return train_set, test_set
+    #     return train_set, test_set
 
-    def train_valid_split(self, input_ids, binary_target, categorical_target):
+    def dataset_splitting(self, input_ids, binary_target, categorical_target):
         input_ids = torch.tensor(input_ids)
         binary_target = torch.tensor(binary_target)
         categorical_target = torch.tensor(categorical_target)
         
         tensor_dataset = TensorDataset(input_ids, binary_target, categorical_target)
 
-        train_size = round(len(tensor_dataset) * 0.9)
-        valid_size = len(tensor_dataset) - train_size
+        train_valid_size = round(len(tensor_dataset) * 0.8)
+        test_size = len(tensor_dataset) - train_valid_size
 
-        train_set, valid_set = torch.utils.data.random_split(tensor_dataset, [train_size, valid_size])
+        train_valid_set, test_set = torch.utils.data.random_split(tensor_dataset, [train_valid_size, test_size])
 
-        return train_set, valid_set
+        train_size = round(len(train_valid_set) * 0.9)
+        valid_size = len(train_valid_set) - train_size
+
+        train_set, valid_set = torch.utils.data.random_split(train_valid_set, [train_size, valid_size])
+
+        return train_set, valid_set, test_set
     
     def count_flat_classes(self):
-        _, level_on_nodes_indexed = self.generate_hierarchy()
+        level_on_nodes_indexed, _, _ = self.generate_hierarchy()
         num_classes = len(level_on_nodes_indexed[2])
 
         return num_classes

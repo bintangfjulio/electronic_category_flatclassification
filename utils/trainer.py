@@ -175,10 +175,10 @@ class Level_Tuning(object):
     #     if not os.path.exists(f'checkpoints/level_{self.model_path}_{self.log_loss}_result'):
     #         os.makedirs(f'checkpoints/level_{self.model_path}_{self.log_loss}_result')
 
-    #     torch.save(self.model.state_dict(), f'checkpoints/level_{self.model_path}_{self.log_loss}_result/level_{level}_temp.pt')
+    #     torch.save(self.model.state_dict(), f'checkpoints/level_{self.model_path}_{self.log_loss}_result/level_{str(level)}_temp.pt')
 
     # def load_model(self, level):
-    #     self.model.load_state_dict(torch.load(f'checkpoints/level_{self.model_path}_{self.log_loss}_result/level_{level}_temp.pt'))
+    #     self.model.load_state_dict(torch.load(f'checkpoints/level_{self.model_path}_{self.log_loss}_result/level_{str(level)}_temp.pt'))
                         
     def training_step(self):
         self.model.train()
@@ -329,7 +329,7 @@ class Level_Tuning(object):
         return mean(test_step_loss), mean(test_step_accuracy), mean(test_step_f1_micro), mean(test_step_f1_macro)
 
     def fit(self):
-        _, level_on_nodes_indexed = self.module.generate_hierarchy()
+        level_on_nodes_indexed, _, _ = self.module.generate_hierarchy()
         level_size = len(level_on_nodes_indexed)
 
         # patience = self.early_stop_patience
@@ -402,7 +402,7 @@ class Level_Tuning(object):
         valid_graph.to_csv(f'logs/level_{self.model_path}_{self.log_loss}_result/valid_graph.csv', index=False, encoding='utf-8')
 
     def test(self):
-        _, level_on_nodes_indexed = self.module.generate_hierarchy()
+        level_on_nodes_indexed, _, _ = self.module.generate_hierarchy()
         level_size = len(level_on_nodes_indexed)
 
         test_accuracy_graph = []
