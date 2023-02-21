@@ -1,11 +1,10 @@
 import torch.nn as nn
 import torch
-import pytorch_lightning as pl
 import torch.nn.functional as F
 
 from transformers import BertModel
 
-class BERT_CNN(pl.LightningModule):
+class BERT_CNN(nn.Module):
     def __init__(self, num_classes, dropout=0.1, input_size=768, window_sizes=[1, 2, 3, 4, 5], in_channels=4, out_channels=32):
         super(BERT_CNN, self).__init__()
         self.pretrained_bert = BertModel.from_pretrained('indolem/indobert-base-uncased', output_hidden_states=True)
