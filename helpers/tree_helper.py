@@ -1,6 +1,5 @@
 import os
 import pandas as pd
-import sys
 
 class Tree_Helper(object):
     def __init__(self, tree_file, dataset=None):
