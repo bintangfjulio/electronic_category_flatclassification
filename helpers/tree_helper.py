@@ -12,7 +12,7 @@ class Tree_Helper(object):
             level_on_nodes = {}
 
             if not os.path.exists(self.tree_file):
-                self.tree_file_creator
+                self.tree_file_creator()
 
             with open(self.tree_file, "r") as tree:
                 for path in tree:
@@ -72,4 +72,3 @@ class Tree_Helper(object):
         with open(self.tree_file, "w") as tree_file:
             for path in hierarchy_path:
                 tree_file.write(path + "\n")
-                
