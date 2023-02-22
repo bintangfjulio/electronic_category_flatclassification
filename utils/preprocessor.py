@@ -67,8 +67,8 @@ class Preprocessor(object):
             if method == 'flat':
                 last_node = row[-1].split(" > ")[-1].lower()
 
-                flat_binary_label = [0] * len(level_on_nodes_indexed[-1])
-                flat_binary_label[level_on_nodes_indexed[-1][last_node]] = 1
+                flat_binary_label = [0] * len(level_on_nodes_indexed[len(level_on_nodes_indexed) - 1])
+                flat_binary_label[level_on_nodes_indexed[len(level_on_nodes_indexed) - 1][last_node]] = 1
 
                 input_ids.append(token['input_ids'])
                 target.append(flat_binary_label)
