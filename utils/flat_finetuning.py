@@ -209,7 +209,7 @@ class Flat_FineTuning(object):
         val_f1_macro_epoch = []
         val_epoch = []
 
-        self.initialize_model(model=model, num_classes=len(level_on_nodes_indexed[-1]))
+        self.initialize_model(model=model, num_classes=len(level_on_nodes_indexed[len(level_on_nodes_indexed) - 1]))
         self.model.zero_grad()
 
         self.train_set, self.valid_set = datamodule.flat_dataloader(stage='fit')
