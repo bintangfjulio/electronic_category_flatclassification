@@ -55,13 +55,14 @@ class Preprocessor(object):
     
     def preprocessing_data(self, dataset, method, tree, level): 
         level_on_nodes_indexed, idx_on_section, section_on_idx = tree.generate_hierarchy()
+        max_length = self.get_max_length(dataset=dataset)
     
         input_ids, target = [], []
         preprocessing_progress = tqdm(dataset.values.tolist())
 
         for row in preprocessing_progress:
             text = self.text_cleaning(str(row[0]))
-            token = self.tokenizer(text=text, max_length=self.get_max_length(), padding="max_length", truncation=True)  
+            token = self.tokenizer(text=text, max_length=max_length, padding="max_length", truncation=True)  
 
             if method == 'flat':
                 last_node = row[-1].split(" > ")[-1].lower()
