@@ -262,8 +262,8 @@ class Flat_FineTuning(object):
         train_result = pd.DataFrame({'epoch': train_epoch, 'accuracy': train_accuracy_epoch, 'loss': train_loss_epoch, 'f1_micro': train_f1_micro_epoch, 'f1_macro': train_f1_macro_epoch})
         valid_result = pd.DataFrame({'epoch': val_epoch, 'accuracy': val_accuracy_epoch, 'loss': val_loss_epoch, 'f1_micro': val_f1_micro_epoch, 'f1_macro': val_f1_macro_epoch})
         
-        train_result.to_csv(f'logs/flat_{model}_result/train_epoch.csv', index=False, encoding='utf-8')
-        valid_result.to_csv(f'logs/flat_{model}_result/valid_epoch.csv', index=False, encoding='utf-8')
+        train_result.to_csv(f'logs/flat_{model}_result/train_result.csv', index=False, encoding='utf-8')
+        valid_result.to_csv(f'logs/flat_{model}_result/valid_result.csv', index=False, encoding='utf-8')
 
     def test(self, model, datamodule):
         test_accuracy_epoch = []
@@ -290,4 +290,4 @@ class Flat_FineTuning(object):
             os.makedirs(f'logs/flat_{model}_result')
                         
         test_result = pd.DataFrame({'accuracy': test_accuracy_epoch, 'loss': test_loss_epoch, 'f1_micro': test_f1_micro_epoch, 'f1_macro': test_f1_macro_epoch})
-        test_result.to_csv(f'logs/flat_{model}_result/test_epoch.csv', index=False, encoding='utf-8')
+        test_result.to_csv(f'logs/flat_{model}_result/test_result.csv', index=False, encoding='utf-8')

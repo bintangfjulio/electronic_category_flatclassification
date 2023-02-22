@@ -203,17 +203,17 @@ class Level_FineTuning(object):
         fail = 0
         minimum_loss = 1.00
 
-        train_accuracy_graph = []
-        train_loss_graph = []
-        train_f1_micro_graph = []
-        train_f1_macro_graph = []
+        train_accuracy_epoch = []
+        train_loss_epoch = []
+        train_f1_micro_epoch = []
+        train_f1_macro_epoch = []
         train_epoch = []
         train_level = []
         
-        val_accuracy_graph = []
-        val_loss_graph = []
-        val_f1_micro_graph = []
-        val_f1_macro_graph = []
+        val_accuracy_epoch = []
+        val_loss_epoch = []
+        val_f1_micro_epoch = []
+        val_f1_macro_epoch = []
         val_epoch = []
         val_level = []
 
@@ -234,10 +234,10 @@ class Level_FineTuning(object):
 
                 train_loss, train_accuracy, train_f1_micro, train_f1_macro = self.training_step()
                 
-                train_loss_graph.append(train_loss)
-                train_accuracy_graph.append(train_accuracy)
-                train_f1_micro_graph.append(train_f1_micro)
-                train_f1_macro_graph.append(train_f1_macro)
+                train_loss_epoch.append(train_loss)
+                train_accuracy_epoch.append(train_accuracy)
+                train_f1_micro_epoch.append(train_f1_micro)
+                train_f1_macro_epoch.append(train_f1_macro)
                 train_epoch.append(epoch)
                 train_level.append(level)
 
@@ -254,10 +254,10 @@ class Level_FineTuning(object):
 
                 val_loss, val_accuracy, val_f1_micro, val_f1_macro = self.validation_step()
                 
-                val_loss_graph.append(val_loss)
-                val_accuracy_graph.append(val_accuracy)
-                val_f1_micro_graph.append(val_f1_micro)
-                val_f1_macro_graph.append(val_f1_macro)
+                val_loss_epoch.append(val_loss)
+                val_accuracy_epoch.append(val_accuracy)
+                val_f1_micro_epoch.append(val_f1_micro)
+                val_f1_macro_epoch.append(val_f1_macro)
                 val_epoch.append(epoch)
                 val_level.append(level)
 
@@ -283,20 +283,20 @@ class Level_FineTuning(object):
         if not os.path.exists(f'logs/level_{model}_result'):
             os.makedirs(f'logs/level_{model}_result')
         
-        train_graph = pd.DataFrame({'epoch': train_epoch, 'level': train_level, 'accuracy': train_accuracy_graph, 'loss': train_loss_graph, 'f1_micro': train_f1_micro_graph, 'f1_macro': train_f1_macro_graph})
-        valid_graph = pd.DataFrame({'epoch': val_epoch, 'level': val_level, 'accuracy': val_accuracy_graph, 'loss': val_loss_graph, 'f1_micro': val_f1_micro_graph, 'f1_macro': val_f1_macro_graph})
+        train_result = pd.DataFrame({'epoch': train_epoch, 'level': train_level, 'accuracy': train_accuracy_epoch, 'loss': train_loss_epoch, 'f1_micro': train_f1_micro_epoch, 'f1_macro': train_f1_macro_epoch})
+        valid_result = pd.DataFrame({'epoch': val_epoch, 'level': val_level, 'accuracy': val_accuracy_epoch, 'loss': val_loss_epoch, 'f1_micro': val_f1_micro_epoch, 'f1_macro': val_f1_macro_epoch})
         
-        train_graph.to_csv(f'logs/level_{model}_result/train_graph.csv', index=False, encoding='utf-8')
-        valid_graph.to_csv(f'logs/level_{model}_result/valid_graph.csv', index=False, encoding='utf-8')
+        train_result.to_csv(f'logs/level_{model}_result/train_result.csv', index=False, encoding='utf-8')
+        valid_result.to_csv(f'logs/level_{model}_result/valid_result.csv', index=False, encoding='utf-8')
 
     def test(self, model, datamodule):
         level_on_nodes_indexed, _, _ = self.tree.generate_hierarchy()        
         level_size = len(level_on_nodes_indexed)
 
-        test_accuracy_graph = []
-        test_loss_graph = []
-        test_f1_micro_graph = []
-        test_f1_macro_graph = []
+        test_accuracy_epoch = []
+        test_loss_epoch = []
+        test_f1_micro_epoch = []
+        test_f1_macro_epoch = []
         test_level = []
 
         for level in range(level_size):
@@ -311,14 +311,14 @@ class Level_FineTuning(object):
             
             test_loss, test_accuracy, test_f1_micro, test_f1_macro = self.test_step()
             
-            test_loss_graph.append(test_loss)
-            test_accuracy_graph.append(test_accuracy)
-            test_f1_micro_graph.append(test_f1_micro)
-            test_f1_macro_graph.append(test_f1_macro)
+            test_loss_epoch.append(test_loss)
+            test_accuracy_epoch.append(test_accuracy)
+            test_f1_micro_epoch.append(test_f1_micro)
+            test_f1_macro_epoch.append(test_f1_macro)
             test_level.append(level)
                         
         if not os.path.exists(f'logs/level_{model}_result'):
             os.makedirs(f'logs/level_{model}_result')
                         
-        test_graph = pd.DataFrame({'level': test_level, 'accuracy': test_accuracy_graph, 'loss': test_loss_graph, 'f1_micro': test_f1_micro_graph, 'f1_macro': test_f1_macro_graph})
-        test_graph.to_csv(f'logs/level_{model}_result/test_graph.csv', index=False, encoding='utf-8')
+        test_result = pd.DataFrame({'level': test_level, 'accuracy': test_accuracy_epoch, 'loss': test_loss_epoch, 'f1_micro': test_f1_micro_epoch, 'f1_macro': test_f1_macro_epoch})
+        test_result.to_csv(f'logs/level_{model}_result/test_result.csv', index=False, encoding='utf-8')
