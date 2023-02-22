@@ -1,3 +1,4 @@
+import random
 import os
 import torch
 import shutil
@@ -18,6 +19,7 @@ class Level_FineTuning(object):
         super(Level_FineTuning, self).__init__() 
         np.random.seed(seed) 
         torch.manual_seed(seed)
+        random.seed(seed)
 
         if device == 'cuda':
             torch.cuda.manual_seed(seed)
