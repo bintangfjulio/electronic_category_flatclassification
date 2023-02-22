@@ -54,9 +54,9 @@ class Level_FineTuning(object):
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=0.5, total_iters=100) 
 
-        self.accuracy_metric = MulticlassAccuracy(num_classes=num_classes)
-        self.f1_micro_metric = MulticlassF1Score(num_classes=num_classes, average='micro')
-        self.f1_macro_metric = MulticlassF1Score(num_classes=num_classes, average='macro')
+        self.accuracy_metric = MulticlassAccuracy(num_classes=num_classes).to(self.device)
+        self.f1_micro_metric = MulticlassF1Score(num_classes=num_classes, average='micro').to(self.device)
+        self.f1_macro_metric = MulticlassF1Score(num_classes=num_classes, average='macro').to(self.device)
 
     def scoring_result(self, preds, target):
         accuracy = self.accuracy_metric(preds, target)
@@ -91,14 +91,14 @@ class Level_FineTuning(object):
             accuracy, f1_micro, f1_macro = self.scoring_result(preds=preds, target=target)
 
             train_step_loss.append(loss.item())
-            train_step_accuracy.append(accuracy)
-            train_step_f1_micro.append(f1_micro)
-            train_step_f1_macro.append(f1_macro)
+            train_step_accuracy.append(accuracy.item())
+            train_step_f1_micro.append(f1_micro.item())
+            train_step_f1_macro.append(f1_macro.item())
             
             training_progress.set_description("Train Step Loss : " + str(round(loss.item(), 2)) + 
-                                        " | Train Step Accuracy : " + str(round(accuracy, 2)) + 
-                                        " | Train Step F1 Micro : " + str(round(f1_micro, 2)) +
-                                        " | Train Step F1 Macro : " + str(round(f1_macro, 2)))
+                                        " | Train Step Accuracy : " + str(round(accuracy.item(), 2)) + 
+                                        " | Train Step F1 Micro : " + str(round(f1_micro.item(), 2)) +
+                                        " | Train Step F1 Macro : " + str(round(f1_macro.item(), 2)))
 
             loss.backward()
             self.optimizer.step()
@@ -137,14 +137,14 @@ class Level_FineTuning(object):
                 accuracy, f1_micro, f1_macro = self.scoring_result(preds=preds, target=target)
 
                 val_step_loss.append(loss.item())
-                val_step_accuracy.append(accuracy)
-                val_step_f1_micro.append(f1_micro)
-                val_step_f1_macro.append(f1_macro)
+                val_step_accuracy.append(accuracy.item())
+                val_step_f1_micro.append(f1_micro.item())
+                val_step_f1_macro.append(f1_macro.item())
                 
                 validation_progress.set_description("Validation Step Loss : " + str(round(loss.item(), 2)) + 
-                                            " | Validation Step Accuracy : " + str(round(accuracy, 2)) + 
-                                            " | Validation Step F1 Micro : " + str(round(f1_micro, 2)) +
-                                            " | Validation Step F1 Macro : " + str(round(f1_macro, 2)))
+                                            " | Validation Step Accuracy : " + str(round(accuracy.item(), 2)) + 
+                                            " | Validation Step F1 Micro : " + str(round(f1_micro.item(), 2)) +
+                                            " | Validation Step F1 Macro : " + str(round(f1_macro.item(), 2)))
 
         print("On Epoch Validation Loss: ", round(mean(val_step_loss), 2))
         print("On Epoch Validation Accuracy: ", round(mean(val_step_accuracy), 2))
@@ -179,15 +179,15 @@ class Level_FineTuning(object):
 
                 accuracy, f1_micro, f1_macro = self.scoring_result(preds=preds, target=target)
 
-                test_step_accuracy.append(accuracy)
-                test_step_f1_micro.append(f1_micro)
-                test_step_f1_macro.append(f1_macro)
                 test_step_loss.append(loss.item())
+                test_step_accuracy.append(accuracy.item())
+                test_step_f1_micro.append(f1_micro.item())
+                test_step_f1_macro.append(f1_macro.item())
                 
                 test_progress.set_description("Test Step Loss : " + str(round(loss.item(), 2)) + 
-                                            " | Test Step Accuracy : " + str(round(accuracy, 2)) + 
-                                            " | Test Step F1 Micro : " + str(round(f1_micro, 2)) +
-                                            " | Test Step F1 Macro : " + str(round(f1_macro, 2)))
+                                            " | Test Step Accuracy : " + str(round(accuracy.item(), 2)) + 
+                                            " | Test Step F1 Micro : " + str(round(f1_micro.item(), 2)) +
+                                            " | Test Step F1 Macro : " + str(round(f1_macro.item(), 2)))
 
         print("On Epoch Test Loss: ", round(mean(test_step_loss), 2))
         print("On Epoch Test Accuracy: ", round(mean(test_step_accuracy), 2))
