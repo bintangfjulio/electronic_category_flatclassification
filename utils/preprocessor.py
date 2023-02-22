@@ -16,7 +16,7 @@ class Preprocessor(object):
     def __init__(self, dataset, tree_file, batch_size, method):
         super(Preprocessor, self).__init__()
         self.dataset = pd.read_csv(dataset)
-        self.tree = Tree_Helper(tree_file=tree_file, dataset=dataset)
+        self.tree = Tree_Helper(tree_file=tree_file, dataset=self.dataset)
         self.batch_size = batch_size
         self.method = method
         self.stop_words = StopWordRemoverFactory().get_stop_words()
