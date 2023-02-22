@@ -1,5 +1,6 @@
 import os
 import torch
+import random
 import torch.nn as nn
 import numpy as np
 import pandas as pd
@@ -17,6 +18,7 @@ class Flat_FineTuning(object):
         super(Flat_FineTuning, self).__init__() 
         np.random.seed(seed) 
         torch.manual_seed(seed)
+        random.seed(seed)
 
         if device == 'cuda':
             torch.cuda.manual_seed(seed)
