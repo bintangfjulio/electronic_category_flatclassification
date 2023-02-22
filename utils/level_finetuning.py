@@ -1,9 +1,11 @@
 import os
 import torch
+import shutil
 import torch.nn as nn
 import numpy as np
 import pandas as pd
 
+from helpers.graph_helper import Graph_Helper
 from statistics import mean
 from tqdm import tqdm
 from models.bert import BERT
@@ -13,7 +15,7 @@ from torchmetrics.classification import MulticlassAccuracy
 from torchmetrics.classification import MulticlassF1Score
 
 class Level_FineTuning(object):
-    def __init__(self, seed, tree, device, max_epochs, lr, early_stop_patience, prev_epoch_checkpoint=None):
+    def __init__(self, seed, tree, device, max_epochs, lr, early_stop_patience, epoch_checkpoint=None):
         super(Level_FineTuning, self).__init__() 
         np.random.seed(seed) 
         torch.manual_seed(seed)
@@ -28,7 +30,7 @@ class Level_FineTuning(object):
         self.max_epochs = max_epochs
         self.lr = lr
         self.early_stop_patience = early_stop_patience
-        self.prev_epoch_checkpoint = prev_epoch_checkpoint
+        self.epoch_checkpoint = epoch_checkpoint
         self.criterion = nn.BCEWithLogitsLoss()
 
     def initialize_model(self, model, num_classes):
@@ -46,8 +48,8 @@ class Level_FineTuning(object):
 
         self.model.to(self.device)
 
-        if self.prev_epoch_checkpoint is not None:
-            self.model.load_state_dict(torch.load(self.prev_epoch_checkpoint))
+        if self.epoch_checkpoint is not None:
+            self.model.load_state_dict(torch.load(self.epoch_checkpoint))
 
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=0.5, total_iters=100) 
@@ -56,21 +58,12 @@ class Level_FineTuning(object):
         self.f1_micro_metric = MulticlassF1Score(num_classes=num_classes, average='micro')
         self.f1_macro_metric = MulticlassF1Score(num_classes=num_classes, average='macro')
 
-    def scoring_result(self, max_preds_idx, target):
-        accuracy = self.accuracy_metric(max_preds_idx, target)
-        f1_micro = self.f1_micro_metric(max_preds_idx, target)
-        f1_macro = self.f1_macro_metric(max_preds_idx, target)
+    def scoring_result(self, preds, target):
+        accuracy = self.accuracy_metric(preds, target)
+        f1_micro = self.f1_micro_metric(preds, target)
+        f1_macro = self.f1_macro_metric(preds, target)
 
         return accuracy, f1_micro, f1_macro
-
-    # def save_model(self, level):
-    #     if not os.path.exists(f'checkpoints/level_{model}_result'):
-    #         os.makedirs(f'checkpoints/level_{model}_result')
-
-    #     torch.save(self.model.state_dict(), f'checkpoints/level_{model}_result/level_{str(level)}_temp.pt')
-
-    # def load_model(self, level):
-    #     self.model.load_state_dict(torch.load(f'checkpoints/level_{model}_result/level_{str(level)}_temp.pt'))
                         
     def training_step(self):
         self.model.train()
@@ -92,10 +85,10 @@ class Level_FineTuning(object):
             preds = self.model(input_ids=input_ids)
             loss = self.criterion(preds, target.float())
 
-            max_preds_idx = preds.argmax(1)
-            max_preds_target = target.argmax(1)
+            preds = preds.argmax(1)
+            target = target.argmax(1)
 
-            accuracy, f1_micro, f1_macro = self.scoring_result(max_preds_idx=max_preds_idx, target=max_preds_target)
+            accuracy, f1_micro, f1_macro = self.scoring_result(preds=preds, target=target)
 
             train_step_loss.append(loss.item())
             train_step_accuracy.append(accuracy)
@@ -138,10 +131,10 @@ class Level_FineTuning(object):
                 preds = self.model(input_ids=input_ids)
                 loss = self.criterion(preds, target.float())
 
-                max_preds_idx = preds.argmax(1)
-                max_preds_target = target.argmax(1)
+                preds = preds.argmax(1)
+                target = target.argmax(1)
 
-                accuracy, f1_micro, f1_macro = self.scoring_result(max_preds_idx=max_preds_idx, target=max_preds_target)
+                accuracy, f1_micro, f1_macro = self.scoring_result(preds=preds, target=target)
 
                 val_step_loss.append(loss.item())
                 val_step_accuracy.append(accuracy)
@@ -173,24 +166,19 @@ class Level_FineTuning(object):
             test_progress = tqdm(self.test_set)
 
             for test_batch in test_progress:
-                input_ids, binary_target, categorical_target = test_batch
+                input_ids, target = test_batch
 
                 input_ids = input_ids.to(self.device)
-                binary_target = binary_target.to(self.device)
-                categorical_target = categorical_target.to(self.device)
+                target = target.to(self.device)
 
                 preds = self.model(input_ids=input_ids)
-                max_preds_idx = preds.argmax(1)
+                loss = self.criterion(preds, target.float())
 
-                if self.log_loss == 'binary':
-                    loss = self.criterion(preds, binary_target.float())
-                    target = binary_target.argmax(1)
+                preds = preds.argmax(1)
+                target = target.argmax(1)
 
-                elif self.log_loss == 'categorical':
-                    loss = self.criterion(preds, categorical_target)
-                    target = categorical_target
+                accuracy, f1_micro, f1_macro = self.scoring_result(preds=preds, target=target)
 
-                accuracy, f1_micro, f1_macro = self.scoring_result(max_preds_idx=max_preds_idx, target=target)
                 test_step_accuracy.append(accuracy)
                 test_step_f1_micro.append(f1_micro)
                 test_step_f1_macro.append(f1_macro)
@@ -233,6 +221,9 @@ class Level_FineTuning(object):
 
         for epoch in range(self.max_epochs):
             for level in range(level_size):
+                if epoch > 0:
+                    self.epoch_checkpoint = f'checkpoints/level_{model}_result/level{str(level)}_epoch{str(epoch - 1)}_temp.pt'
+
                 self.initialize_model(model=model, num_classes=len(level_on_nodes_indexed[level]))
                 self.train_set, self.valid_set = datamodule.level_dataloader(stage='fit', level=level)
 
@@ -240,6 +231,7 @@ class Level_FineTuning(object):
                 print("Epoch ", epoch)
                 print("Level ", level)
                 print("=" * 50)
+
                 train_loss, train_accuracy, train_f1_micro, train_f1_macro = self.training_step()
                 
                 train_loss_graph.append(train_loss)
@@ -249,7 +241,17 @@ class Level_FineTuning(object):
                 train_epoch.append(epoch)
                 train_level.append(level)
 
+                if not os.path.exists(f'checkpoints/level_{model}_result'):
+                    os.makedirs(f'checkpoints/level_{model}_result')
+
+                torch.save(self.model.state_dict(), f'checkpoints/level_{model}_result/level{str(level)}_epoch{str(epoch)}_temp.pt')
+
+                if epoch > 0:
+                    os.remove(f'checkpoints/level_{model}_result/level{str(level)}_epoch{str(epoch - 1)}_temp.pt')
+
                 print("Validation Stage...")
+                print("=" * 50)
+
                 val_loss, val_accuracy, val_f1_micro, val_f1_macro = self.validation_step()
                 
                 val_loss_graph.append(val_loss)
@@ -258,7 +260,6 @@ class Level_FineTuning(object):
                 val_f1_macro_graph.append(val_f1_macro)
                 val_epoch.append(epoch)
                 val_level.append(level)
-                print("=" * 50)
 
                 if(level == level_size - 1):
                     if round(val_loss, 2) < round(minimum_loss, 2):
@@ -266,6 +267,15 @@ class Level_FineTuning(object):
                         minimum_loss = val_loss                    
                     else:
                         fail += 1
+
+                    for level in range(level_size):
+                        if not os.path.exists(f'checkpoints/level_{model}_result/best_model'):
+                            os.makedirs(f'checkpoints/level_{model}_result/best_model')
+
+                        if os.path.exists(f'checkpoints/level_{model}_result/best_model/level{str(level)}_model.pt'):
+                            os.remove(f'checkpoints/level_{model}_result/best_model/level{str(level)}_model.pt')
+
+                        shutil.copy(f'checkpoints/level_{model}_result/level{str(level)}_epoch{str(epoch)}_temp.pt', f'checkpoints/level_{model}_result/best_model/level{str(level)}_model.pt')
 
             if fail == self.early_stop_patience:
                 break
@@ -279,6 +289,10 @@ class Level_FineTuning(object):
         train_graph.to_csv(f'logs/level_{model}_result/train_graph.csv', index=False, encoding='utf-8')
         valid_graph.to_csv(f'logs/level_{model}_result/valid_graph.csv', index=False, encoding='utf-8')
 
+        # for data in [train_graph, valid_graph]:
+        #     graph_generator = Graph_Helper(data, stage='fit')
+        #     graph_generator.save_graph()
+
     def test(self, model, datamodule):
         level_on_nodes_indexed, _, _ = self.tree.generate_hierarchy()        
         level_size = len(level_on_nodes_indexed)
@@ -290,13 +304,15 @@ class Level_FineTuning(object):
         test_level = []
 
         for level in range(level_size):
+            self.epoch_checkpoint = f'checkpoints/level_{model}_result/best_model/level{str(level)}_model.pt'
+            self.initialize_model(model=model, num_classes=len(level_on_nodes_indexed[level]))
             self.test_set = datamodule.level_dataloader(stage='test', level=level)
-            print("Level ", level)
-            print("=" * 50)
 
             print("Test Stage...")
-            test_loss, test_accuracy, test_f1_micro, test_f1_macro = self.test_step()
+            print("Level ", level)
             print("=" * 50)
+            
+            test_loss, test_accuracy, test_f1_micro, test_f1_macro = self.test_step()
             
             test_loss_graph.append(test_loss)
             test_accuracy_graph.append(test_accuracy)
@@ -310,3 +326,5 @@ class Level_FineTuning(object):
         test_graph = pd.DataFrame({'level': test_level, 'accuracy': test_accuracy_graph, 'loss': test_loss_graph, 'f1_micro': test_f1_micro_graph, 'f1_macro': test_f1_macro_graph})
         test_graph.to_csv(f'logs/level_{model}_result/test_graph.csv', index=False, encoding='utf-8')
         
+        # graph_generator = Graph_Helper(test_graph, stage='test')
+        # graph_generator.save_graph()

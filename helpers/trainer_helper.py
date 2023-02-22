@@ -1,4 +1,4 @@
-from utils.flat_tuning import Level_FineTuning
+from utils.level_finetuning import Level_FineTuning
 from helpers.tree_helper import Tree_Helper
 
 class Trainer_Helper(object):
