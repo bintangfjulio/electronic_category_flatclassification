@@ -141,7 +141,31 @@ class Preprocessor(object):
 
         train_set, valid_set = torch.utils.data.random_split(train_valid_set, [train_size, valid_size])
 
-        return train_set, valid_set, test_set        
+        return train_set, valid_set, test_set      
+
+    def flat_dataloader(self, stage):
+        flat_train_set, flat_valid_set, flat_test_set = self.preprocessor() 
+        
+        if stage == 'fit':
+            train_dataloader = DataLoader(dataset=flat_train_set,
+                                        batch_size=self.batch_size,
+                                        shuffle=True,
+                                        num_workers=multiprocessing.cpu_count())
+
+            val_dataloader = DataLoader(dataset=flat_valid_set,
+                                        batch_size=self.batch_size,
+                                        shuffle=False,
+                                        num_workers=multiprocessing.cpu_count())
+
+            return train_dataloader, val_dataloader
+
+        elif stage == 'test':
+            test_dataloader = DataLoader(dataset=flat_test_set,
+                                        batch_size=self.batch_size,
+                                        shuffle=False,
+                                        num_workers=multiprocessing.cpu_count())
+
+            return test_dataloader  
 
     def level_dataloader(self, stage, level):
         level_train_set, level_valid_set, level_test_set = self.preprocessor(level=level) 

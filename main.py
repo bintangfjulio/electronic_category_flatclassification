@@ -24,4 +24,3 @@ if __name__ == "__main__":
 
     trainer.fit(model=config['model'], datamodule=datamodule)
     trainer.test(model=config['model'], datamodule=datamodule)
-    

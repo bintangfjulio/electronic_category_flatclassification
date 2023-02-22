@@ -1,6 +1,5 @@
 import os
 import torch
-import shutil
 import torch.nn as nn
 import numpy as np
 import pandas as pd
@@ -13,9 +12,9 @@ from models.bert_lstm import BERT_LSTM
 from torchmetrics.classification import MulticlassAccuracy
 from torchmetrics.classification import MulticlassF1Score
 
-class Level_FineTuning(object):
-    def __init__(self, seed, tree, device, max_epochs, lr, early_stop_patience, epoch_checkpoint=None):
-        super(Level_FineTuning, self).__init__() 
+class Flat_FineTuning(object):
+    def __init__(self, seed, tree, device, max_epochs, lr, early_stop_patience):
+        super(Flat_FineTuning, self).__init__() 
         np.random.seed(seed) 
         torch.manual_seed(seed)
 
@@ -30,7 +29,6 @@ class Level_FineTuning(object):
         self.lr = lr
         self.early_stop_patience = early_stop_patience
         self.criterion = nn.BCEWithLogitsLoss()
-        self.epoch_checkpoint = epoch_checkpoint
 
     def initialize_model(self, model, num_classes):
         if model == 'bert':
@@ -44,9 +42,6 @@ class Level_FineTuning(object):
 
         elif model == 'bert-lstm':
             self.model = BERT_LSTM(num_classes=num_classes, bidirectional=False)
-
-        if self.epoch_checkpoint is not None:
-            self.model.load_state_dict(torch.load(self.epoch_checkpoint))
 
         self.model.to(self.device)
 
@@ -63,7 +58,7 @@ class Level_FineTuning(object):
         f1_macro = self.f1_macro_metric(preds, target)
 
         return accuracy, f1_micro, f1_macro
-                        
+
     def training_step(self):
         self.model.train(True)
 
@@ -195,130 +190,104 @@ class Level_FineTuning(object):
         print("On Epoch Test F1 Macro: ", round(mean(test_step_f1_macro), 2))
 
         return mean(test_step_loss), mean(test_step_accuracy), mean(test_step_f1_micro), mean(test_step_f1_macro)
-
+        
     def fit(self, model, datamodule):
         level_on_nodes_indexed, _, _ = self.tree.generate_hierarchy()        
-        level_size = len(level_on_nodes_indexed)
 
         fail = 0
         minimum_loss = 1.00
 
-        train_accuracy_graph = []
-        train_loss_graph = []
-        train_f1_micro_graph = []
-        train_f1_macro_graph = []
+        train_accuracy_epoch = []
+        train_loss_epoch = []
+        train_f1_micro_epoch = []
+        train_f1_macro_epoch = []
         train_epoch = []
-        train_level = []
-        
-        val_accuracy_graph = []
-        val_loss_graph = []
-        val_f1_micro_graph = []
-        val_f1_macro_graph = []
+
+        val_accuracy_epoch = []
+        val_loss_epoch = []
+        val_f1_micro_epoch = []
+        val_f1_macro_epoch = []
         val_epoch = []
-        val_level = []
+
+        self.initialize_model(model=model, num_classes=len(level_on_nodes_indexed[-1]))
+        self.model.zero_grad()
+
+        self.train_set, self.valid_set = datamodule.flat_dataloader(stage='fit')
 
         for epoch in range(self.max_epochs):
-            for level in range(level_size):
-                if epoch > 0:
-                    self.epoch_checkpoint = f'checkpoints/level_{model}_result/level{str(level)}_epoch{str(epoch - 1)}_temp.pt'
+            print("Training Stage...")
+            print("Epoch ", epoch)
+            print("=" * 50)
 
-                self.initialize_model(model=model, num_classes=len(level_on_nodes_indexed[level]))
-                self.model.zero_grad()
+            train_loss, train_accuracy, train_f1_micro, train_f1_macro = self.training_step()
+            
+            train_loss_epoch.append(train_loss)
+            train_accuracy_epoch.append(train_accuracy)
+            train_f1_micro_epoch.append(train_f1_micro)
+            train_f1_macro_epoch.append(train_f1_macro)
+            train_epoch.append(epoch)
+            
+            print("Validation Stage...")
+            print("=" * 50)
 
-                self.train_set, self.valid_set = datamodule.level_dataloader(stage='fit', level=level)
+            val_loss, val_accuracy, val_f1_micro, val_f1_macro = self.validation_step()
 
-                print("Training Stage...")
-                print("Epoch ", epoch)
-                print("Level ", level)
-                print("=" * 50)
+            val_loss_epoch.append(val_loss)
+            val_accuracy_epoch.append(val_accuracy)
+            val_f1_micro_epoch.append(val_f1_micro)
+            val_f1_macro_epoch.append(val_f1_macro)
+            val_epoch.append(epoch)
 
-                train_loss, train_accuracy, train_f1_micro, train_f1_macro = self.training_step()
-                
-                train_loss_graph.append(train_loss)
-                train_accuracy_graph.append(train_accuracy)
-                train_f1_micro_graph.append(train_f1_micro)
-                train_f1_macro_graph.append(train_f1_macro)
-                train_epoch.append(epoch)
-                train_level.append(level)
+            if round(val_loss, 2) < round(minimum_loss, 2):
+                fail = 0
+                minimum_loss = val_loss
 
-                if not os.path.exists(f'checkpoints/level_{model}_result'):
-                    os.makedirs(f'checkpoints/level_{model}_result')
+                if not os.path.exists(f'checkpoints/flat_{model}_result'):
+                    os.makedirs(f'checkpoints/flat_{model}_result')
 
-                torch.save(self.model.state_dict(), f'checkpoints/level_{model}_result/level{str(level)}_epoch{str(epoch)}_temp.pt')
+                if os.path.exists(f'checkpoints/flat_{model}_result/flat_model.pt'):
+                    os.remove(f'checkpoints/flat_{model}_result/flat_model.pt')
 
-                if epoch > 0:
-                    os.remove(f'checkpoints/level_{model}_result/level{str(level)}_epoch{str(epoch - 1)}_temp.pt')
+                torch.save(self.model.state_dict(), f'checkpoints/flat_{model}_result/flat_model.pt')
 
-                print("Validation Stage...")
-                print("=" * 50)
-
-                val_loss, val_accuracy, val_f1_micro, val_f1_macro = self.validation_step()
-                
-                val_loss_graph.append(val_loss)
-                val_accuracy_graph.append(val_accuracy)
-                val_f1_micro_graph.append(val_f1_micro)
-                val_f1_macro_graph.append(val_f1_macro)
-                val_epoch.append(epoch)
-                val_level.append(level)
-
-                if(level == level_size - 1):
-                    if round(val_loss, 2) < round(minimum_loss, 2):
-                        fail = 0
-                        minimum_loss = val_loss 
-
-                        for level in range(level_size):
-                            if not os.path.exists(f'checkpoints/level_{model}_result/best_model'):
-                                os.makedirs(f'checkpoints/level_{model}_result/best_model')
-
-                            if os.path.exists(f'checkpoints/level_{model}_result/best_model/level{str(level)}_model.pt'):
-                                os.remove(f'checkpoints/level_{model}_result/best_model/level{str(level)}_model.pt')
-
-                            shutil.copy(f'checkpoints/level_{model}_result/level{str(level)}_epoch{str(epoch)}_temp.pt', f'checkpoints/level_{model}_result/best_model/level{str(level)}_model.pt')                   
-                    else:
-                        fail += 1
+            else:
+                fail += 1
 
             if fail == self.early_stop_patience:
                 break
+
+        if not os.path.exists(f'logs/flat_{model}_result'):
+            os.makedirs(f'logs/flat_{model}_result')
+            
+        train_result = pd.DataFrame({'epoch': train_epoch, 'accuracy': train_accuracy_epoch, 'loss': train_loss_epoch, 'f1_micro': train_f1_micro_epoch, 'f1_macro': train_f1_macro_epoch})
+        valid_result = pd.DataFrame({'epoch': val_epoch, 'accuracy': val_accuracy_epoch, 'loss': val_loss_epoch, 'f1_micro': val_f1_micro_epoch, 'f1_macro': val_f1_macro_epoch})
         
-        if not os.path.exists(f'logs/level_{model}_result'):
-            os.makedirs(f'logs/level_{model}_result')
-        
-        train_graph = pd.DataFrame({'epoch': train_epoch, 'level': train_level, 'accuracy': train_accuracy_graph, 'loss': train_loss_graph, 'f1_micro': train_f1_micro_graph, 'f1_macro': train_f1_macro_graph})
-        valid_graph = pd.DataFrame({'epoch': val_epoch, 'level': val_level, 'accuracy': val_accuracy_graph, 'loss': val_loss_graph, 'f1_micro': val_f1_micro_graph, 'f1_macro': val_f1_macro_graph})
-        
-        train_graph.to_csv(f'logs/level_{model}_result/train_graph.csv', index=False, encoding='utf-8')
-        valid_graph.to_csv(f'logs/level_{model}_result/valid_graph.csv', index=False, encoding='utf-8')
+        train_result.to_csv(f'logs/flat_{model}_result/train_epoch.csv', index=False, encoding='utf-8')
+        valid_result.to_csv(f'logs/flat_{model}_result/valid_epoch.csv', index=False, encoding='utf-8')
 
     def test(self, model, datamodule):
-        level_on_nodes_indexed, _, _ = self.tree.generate_hierarchy()        
-        level_size = len(level_on_nodes_indexed)
+        test_accuracy_epoch = []
+        test_loss_epoch = []
+        test_f1_micro_epoch = []
+        test_f1_macro_epoch = []
 
-        test_accuracy_graph = []
-        test_loss_graph = []
-        test_f1_micro_graph = []
-        test_f1_macro_graph = []
-        test_level = []
+        self.model.load_state_dict(torch.load(f'checkpoints/flat_{model}_result/flat_model.pt'))
+        self.model.to(self.device)
 
-        for level in range(level_size):
-            self.epoch_checkpoint = f'checkpoints/level_{model}_result/best_model/level{str(level)}_model.pt'
-            self.initialize_model(model=model, num_classes=len(level_on_nodes_indexed[level]))
-            
-            self.test_set = datamodule.level_dataloader(stage='test', level=level)
+        self.test_set = datamodule.flat_dataloader(stage='test')
 
-            print("Test Stage...")
-            print("Level ", level)
-            print("=" * 50)
-            
-            test_loss, test_accuracy, test_f1_micro, test_f1_macro = self.test_step()
-            
-            test_loss_graph.append(test_loss)
-            test_accuracy_graph.append(test_accuracy)
-            test_f1_micro_graph.append(test_f1_micro)
-            test_f1_macro_graph.append(test_f1_macro)
-            test_level.append(level)
+        print("Test Stage...")
+        print("=" * 50)
+        
+        test_loss, test_accuracy, test_f1_micro, test_f1_macro = self.test_step()
+        
+        test_loss_epoch.append(test_loss)
+        test_accuracy_epoch.append(test_accuracy)
+        test_f1_micro_epoch.append(test_f1_micro)
+        test_f1_macro_epoch.append(test_f1_macro)
                         
-        if not os.path.exists(f'logs/level_{model}_result'):
-            os.makedirs(f'logs/level_{model}_result')
+        if not os.path.exists(f'logs/flat_{model}_result'):
+            os.makedirs(f'logs/flat_{model}_result')
                         
-        test_graph = pd.DataFrame({'level': test_level, 'accuracy': test_accuracy_graph, 'loss': test_loss_graph, 'f1_micro': test_f1_micro_graph, 'f1_macro': test_f1_macro_graph})
-        test_graph.to_csv(f'logs/level_{model}_result/test_graph.csv', index=False, encoding='utf-8')
+        test_result = pd.DataFrame({'accuracy': test_accuracy_epoch, 'loss': test_loss_epoch, 'f1_micro': test_f1_micro_epoch, 'f1_macro': test_f1_macro_epoch})
+        test_result.to_csv(f'logs/flat_{model}_result/test_epoch.csv', index=False, encoding='utf-8')

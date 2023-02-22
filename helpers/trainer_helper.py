@@ -1,4 +1,5 @@
 from utils.level_finetuning import Level_FineTuning
+from utils.flat_finetuning import Flat_FineTuning
 from helpers.tree_helper import Tree_Helper
 
 class Trainer_Helper(object):
@@ -6,15 +7,20 @@ class Trainer_Helper(object):
         tree = Tree_Helper(tree_file=tree_file)
 
         if method == 'flat':
-            pass
+            self.trainer = Flat_FineTuning(seed=seed, 
+                                        tree=tree,
+                                        device=device, 
+                                        max_epochs=max_epochs,
+                                        lr=lr, 
+                                        early_stop_patience=early_stop_patience)
 
         elif method == 'level':
             self.trainer = Level_FineTuning(seed=seed, 
-                                tree=tree,
-                                device=device, 
-                                max_epochs=max_epochs,
-                                lr=lr, 
-                                early_stop_patience=early_stop_patience)
+                                        tree=tree,
+                                        device=device, 
+                                        max_epochs=max_epochs,
+                                        lr=lr, 
+                                        early_stop_patience=early_stop_patience)
 
         elif method == 'section':
             pass

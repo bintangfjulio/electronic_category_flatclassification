@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import pytorch_lightning as pl
 
 from transformers import BertModel
 
@@ -34,4 +33,3 @@ class BERT_LSTM(nn.Module):
         preds = self.output_layer(self.dropout(self.tanh(lstm_output)))
         
         return preds
-        
