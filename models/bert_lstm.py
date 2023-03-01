@@ -10,7 +10,6 @@ class BERT_LSTM(nn.Module):
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, bidirectional=bidirectional, batch_first=True)
         self.dropout = nn.Dropout(dropout) 
         self.bidirectional = bidirectional
-        self.tanh = nn.Tanh()
         
         if bidirectional:
             self.output_layer = nn.Linear(hidden_size * 2, num_classes) 
@@ -30,6 +29,6 @@ class BERT_LSTM(nn.Module):
         else:
             lstm_output = lstm_hidden_state[-1]
 
-        preds = self.output_layer(self.dropout(self.tanh(lstm_output)))
+        preds = self.output_layer(self.dropout(lstm_output))
         
         return preds

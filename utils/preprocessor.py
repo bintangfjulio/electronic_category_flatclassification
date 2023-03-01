@@ -2,6 +2,7 @@ import torch
 import os
 import re
 import string
+import requests
 import multiprocessing
 import pandas as pd
 
@@ -13,10 +14,17 @@ from transformers import BertTokenizer
 from torch.utils.data import TensorDataset, DataLoader
 
 class Preprocessor(object):
-    def __init__(self, dataset, tree_file, batch_size, method):
+    def __init__(self, dataset, batch_size, method):
         super(Preprocessor, self).__init__()
-        self.dataset = pd.read_csv(dataset)
-        self.tree = Tree_Helper(tree_file=tree_file, dataset=self.dataset)
+        if not os.path.exists(f'datasets/{dataset}_product_tokopedia.csv'):
+            os.makedirs('datasets')
+            version = str(0.1) if dataset == 'small' else str(0.0)
+            url = f'https://github.com/bintangfjulio/product_categories_classification/releases/download/{version}/{dataset}_product_tokopedia.csv'
+            file = requests.get(url, allow_redirects=True)
+            open(f'datasets/{dataset}_product_tokopedia.csv', 'wb').write(file.content)
+
+        self.dataset = pd.read_csv(f'datasets/{dataset}_product_tokopedia.csv')
+        self.tree = Tree_Helper(tree_file=f'datasets/{dataset}_hierarchy.tree', dataset=self.dataset)
         self.batch_size = batch_size
         self.method = method
         self.stop_words = StopWordRemoverFactory().get_stop_words()
@@ -66,23 +74,18 @@ class Preprocessor(object):
 
             if method == 'flat':
                 last_node = row[-1].split(" > ")[-1].lower()
-
-                flat_binary_label = [0] * len(level_on_nodes_indexed[len(level_on_nodes_indexed) - 1])
-                flat_binary_label[level_on_nodes_indexed[len(level_on_nodes_indexed) - 1][last_node]] = 1
+                flat_target = level_on_nodes_indexed[len(level_on_nodes_indexed) - 1][last_node]
 
                 input_ids.append(token['input_ids'])
-                target.append(flat_binary_label)
+                target.append(flat_target)
             
             elif method == 'level':
                 node_on_level = row[-1].split(" > ")[level].lower()
                 member_on_level = level_on_nodes_indexed[level]
-                node_idx = member_on_level[node_on_level]
-
-                level_binary_label = [0] * len(member_on_level)
-                level_binary_label[node_idx] = 1
+                level_target = member_on_level[node_on_level]
 
                 input_ids.append(token['input_ids'])
-                target.append(level_binary_label)
+                target.append(level_target)
 
             elif method == 'section':
                 nodes = row[-1].lower().split(" > ")
@@ -92,12 +95,8 @@ class Preprocessor(object):
                 for node in nodes:
                     section_idx = section_on_idx[node]
                     nodes_on_section = idx_on_section[section_idx]
-                    node_idx = nodes_on_section.index(node)
-
-                    section_binary_label = [0] * len(nodes_on_section)
-                    section_binary_label[node_idx] = 1
-
-                    section[section_idx] = section_binary_label
+                    section_target = nodes_on_section.index(node)
+                    section[section_idx] = section_target
 
                 input_ids.append(token['input_ids'])
                 target.append(section)

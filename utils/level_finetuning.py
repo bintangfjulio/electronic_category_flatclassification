@@ -15,23 +15,23 @@ from torchmetrics.classification import MulticlassAccuracy
 from torchmetrics.classification import MulticlassF1Score
 
 class Level_FineTuning(object):
-    def __init__(self, seed, tree, device, max_epochs, lr, early_stop_patience, epoch_checkpoint=None):
+    def __init__(self, seed, tree, max_epochs, lr, early_stop_patience, epoch_checkpoint=None):
         super(Level_FineTuning, self).__init__() 
         np.random.seed(seed) 
         torch.manual_seed(seed)
         random.seed(seed)
 
-        if device == 'cuda':
+        if torch.cuda.is_available():
             torch.cuda.manual_seed(seed)
             torch.cuda.manual_seed_all(seed)
             torch.backends.cudnn.deterministic = True
 
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.tree = tree
-        self.device = device
         self.max_epochs = max_epochs
         self.lr = lr
         self.early_stop_patience = early_stop_patience
-        self.criterion = nn.BCEWithLogitsLoss()
+        self.criterion = nn.CrossEntropyLoss()
         self.epoch_checkpoint = epoch_checkpoint
 
     def initialize_model(self, model, num_classes):
@@ -83,10 +83,10 @@ class Level_FineTuning(object):
             target = target.to(self.device)
 
             preds = self.model(input_ids=input_ids)
-            loss = self.criterion(preds, target.float())
+            loss = self.criterion(preds, target)
 
-            preds = preds.argmax(1)
-            target = target.argmax(1)
+            preds = torch.argmax(preds, dim=1)
+            target = torch.argmax(target, dim=1)
 
             accuracy, f1_micro, f1_macro = self.scoring_result(preds=preds, target=target)
 
@@ -130,10 +130,10 @@ class Level_FineTuning(object):
                 target = target.to(self.device)
 
                 preds = self.model(input_ids=input_ids)
-                loss = self.criterion(preds, target.float())
+                loss = self.criterion(preds, target)
 
-                preds = preds.argmax(1)
-                target = target.argmax(1)
+                preds = torch.argmax(preds, dim=1)
+                target = torch.argmax(target, dim=1)
 
                 accuracy, f1_micro, f1_macro = self.scoring_result(preds=preds, target=target)
 
@@ -174,10 +174,10 @@ class Level_FineTuning(object):
                 target = target.to(self.device)
 
                 preds = self.model(input_ids=input_ids)
-                loss = self.criterion(preds, target.float())
+                loss = self.criterion(preds, target)
 
-                preds = preds.argmax(1)
-                target = target.argmax(1)
+                preds = torch.argmax(preds, dim=1)
+                target = torch.argmax(target, dim=1)
 
                 accuracy, f1_micro, f1_macro = self.scoring_result(preds=preds, target=target)
 

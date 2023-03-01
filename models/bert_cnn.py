@@ -11,7 +11,6 @@ class BERT_CNN(nn.Module):
         self.convolutional_layers = nn.ModuleList([nn.Conv2d(in_channels, out_channels, (window_size, input_size)) for window_size in window_sizes])
         self.dropout = nn.Dropout(dropout)
         self.output_layer = nn.Linear(len(window_sizes) * out_channels, num_classes)
-        self.tanh = nn.Tanh()
 
     def forward(self, input_ids):
         bert_output = self.pretrained_bert(input_ids=input_ids)
@@ -19,10 +18,10 @@ class BERT_CNN(nn.Module):
         all_hidden_states = torch.stack(all_hidden_states, dim=1)
         selected_hidden_states = all_hidden_states[:, -4:]
 
-        pooling_layer = [F.relu(layer(selected_hidden_states).squeeze(3)) for layer in self.convolutional_layers] 
-        max_pooling_layer = [F.max_pool1d(features, features.size(2)).squeeze(2) for features in pooling_layer]  
+        pooler = [F.relu(layer(selected_hidden_states).squeeze(3)) for layer in self.convolutional_layers] 
+        max_pooler = [F.max_pool1d(features, features.size(2)).squeeze(2) for features in pooler]  
 
-        flatten_layer = torch.cat(max_pooling_layer, dim=1) 
-        preds = self.output_layer(self.dropout(self.tanh(flatten_layer)))
+        flatten = torch.cat(max_pooler, dim=1) 
+        preds = self.output_layer(self.dropout(flatten))
         
         return preds

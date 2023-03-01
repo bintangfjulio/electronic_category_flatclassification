@@ -3,13 +3,12 @@ from utils.flat_finetuning import Flat_FineTuning
 from helpers.tree_helper import Tree_Helper
 
 class Trainer_Helper(object):
-    def __init__(self, method, tree_file, seed, device, max_epochs, lr, early_stop_patience):
-        tree = Tree_Helper(tree_file=tree_file)
+    def __init__(self, method, dataset, seed, max_epochs, lr, early_stop_patience):
+        tree = Tree_Helper(tree_file=f'datasets/{dataset}_hierarchy.tree')
 
         if method == 'flat':
             self.trainer = Flat_FineTuning(seed=seed, 
                                         tree=tree,
-                                        device=device, 
                                         max_epochs=max_epochs,
                                         lr=lr, 
                                         early_stop_patience=early_stop_patience)
@@ -17,7 +16,6 @@ class Trainer_Helper(object):
         elif method == 'level':
             self.trainer = Level_FineTuning(seed=seed, 
                                         tree=tree,
-                                        device=device, 
                                         max_epochs=max_epochs,
                                         lr=lr, 
                                         early_stop_patience=early_stop_patience)
