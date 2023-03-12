@@ -10,7 +10,7 @@ if __name__ == "__main__":
     parser.add_argument('--method', choices=['flat', 'level', 'section'], required=True, help='Fine tuning method choices')
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max_epochs", type=int, default=50)
-    parser.add_argument("--lr", type=int, default=2e-5)
+    parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--early_stop_patience", type=int, default=5)
     parser.add_argument('--model', choices=['bert', 'bert-cnn', 'bert-bilstm', 'bert-lstm'], required=True, help='Model choices to fine tune')
     
