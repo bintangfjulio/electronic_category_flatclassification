@@ -202,9 +202,6 @@ class Flat_Trainer(object):
     def fit(self, datamodule):
         level_on_nodes_indexed, _, _ = self.tree.generate_hierarchy()
 
-        self.model.zero_grad()
-        best_loss = 9.99
-
         train_accuracy_epoch = []
         train_loss_epoch = []
         train_f1_micro_epoch = []
@@ -219,6 +216,9 @@ class Flat_Trainer(object):
 
         self.train_set, self.valid_set = datamodule.flat_dataloader(stage='fit')
         self.initialize_model(num_classes=len(level_on_nodes_indexed[len(level_on_nodes_indexed) - 1]), train_size=len(self.train_set))
+        
+        self.model.zero_grad()
+        best_loss = 9.99
 
         for epoch in range(self.max_epochs):
             print("Training Stage...")
