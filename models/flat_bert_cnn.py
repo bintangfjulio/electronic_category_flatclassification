@@ -105,7 +105,6 @@ class Flat_Trainer(object):
                                         " | Train Step F1 Micro : " + str(round(f1_micro.item(), 2)) +
                                         " | Train Step F1 Macro : " + str(round(f1_macro.item(), 2)))
 
-
             loss.backward()
             self.optimizer.step()
             self.scheduler.step()
