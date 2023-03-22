@@ -8,7 +8,7 @@ class Tree_Helper(object):
         if not os.path.exists(tree_file):
             self.create_tree_file()
             
-    def create_tree_file(self) -> None:
+    def create_tree_file(self):
         hierarchy_path = []
 
         for column_idx, column in enumerate(self.dataset.columns.tolist()):
@@ -22,7 +22,7 @@ class Tree_Helper(object):
             for path in hierarchy_path:
                 tree_file.write(path + "\n")
 
-    def generate_hierarchy(self) -> dict:
+    def generate_hierarchy(self):
         section_parent_child = {}
         level_on_nodes = {}
 
@@ -70,3 +70,4 @@ class Tree_Helper(object):
             level_on_nodes_indexed[level] = node_with_idx
 
         return level_on_nodes_indexed, idx_on_section, section_on_idx
+    

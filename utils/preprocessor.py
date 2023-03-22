@@ -7,20 +7,25 @@ import multiprocessing
 import pandas as pd
 
 from tqdm import tqdm
-from helpers.tree_helper import Tree_Helper
+from utils.tree_helper import Tree_Helper
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from transformers import BertTokenizer
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 
 class Preprocessor(object):
-    def __init__(self, dataset, batch_size, method):
+    def __init__(self, method, dataset, batch_size, bert_model):
         super(Preprocessor, self).__init__()
-        if not os.path.exists(f'datasets/{dataset}_product_tokopedia.csv'):
+        if not os.path.exists('datasets'):
             os.makedirs('datasets')
-            version = str(0.1) if dataset == 'small' else str(0.0)
-            url = f'https://github.com/bintangfjulio/product_categories_classification/releases/download/{version}/{dataset}_product_tokopedia.csv'
-            file = requests.get(url, allow_redirects=True)
+
+        if not os.path.exists(f'datasets/{dataset}_product_tokopedia.csv'):
+            version = {
+                'small': '0.1',
+                'large': '0.0'
+            }
+                    
+            file = requests.get(f'https://github.com/bintangfjulio/product_categories_classification/releases/download/{version[dataset]}/{dataset}_product_tokopedia.csv', allow_redirects=True)
             open(f'datasets/{dataset}_product_tokopedia.csv', 'wb').write(file.content)
 
         self.dataset = pd.read_csv(f'datasets/{dataset}_product_tokopedia.csv')
@@ -29,7 +34,7 @@ class Preprocessor(object):
         self.method = method
         self.stop_words = StopWordRemoverFactory().get_stop_words()
         self.stemmer = StemmerFactory().create_stemmer()
-        self.tokenizer = BertTokenizer.from_pretrained('indolem/indobert-base-uncased')
+        self.tokenizer = BertTokenizer.from_pretrained(bert_model)
     
     def preprocessor(self, level='all'):
         if self.method == 'section':
@@ -75,7 +80,6 @@ class Preprocessor(object):
             if method == 'flat':
                 last_node = row[-1].split(" > ")[-1].lower()
                 flat_target = level_on_nodes_indexed[len(level_on_nodes_indexed) - 1][last_node]
-
                 input_ids.append(token['input_ids'])
                 target.append(flat_target)
             
@@ -83,13 +87,11 @@ class Preprocessor(object):
                 node_on_level = row[-1].split(" > ")[level].lower()
                 member_on_level = level_on_nodes_indexed[level]
                 level_target = member_on_level[node_on_level]
-
                 input_ids.append(token['input_ids'])
                 target.append(level_target)
 
             elif method == 'section':
                 nodes = row[-1].lower().split(" > ")
-                
                 section = {}
 
                 for node in nodes:
@@ -145,47 +147,59 @@ class Preprocessor(object):
     def flat_dataloader(self, stage):
         flat_train_set, flat_valid_set, flat_test_set = self.preprocessor() 
         
+        train_sampler = RandomSampler(flat_train_set)
+        valid_sampler = SequentialSampler(flat_valid_set)
+        test_sampler = SequentialSampler(flat_test_set)
+        
         if stage == 'fit':
             train_dataloader = DataLoader(dataset=flat_train_set,
+                                        sampler=train_sampler,
                                         batch_size=self.batch_size,
-                                        shuffle=True,
                                         num_workers=multiprocessing.cpu_count())
 
             val_dataloader = DataLoader(dataset=flat_valid_set,
+                                        sampler=valid_sampler,
                                         batch_size=self.batch_size,
-                                        shuffle=False,
                                         num_workers=multiprocessing.cpu_count())
 
             return train_dataloader, val_dataloader
 
         elif stage == 'test':
             test_dataloader = DataLoader(dataset=flat_test_set,
+                                        sampler=test_sampler,
                                         batch_size=self.batch_size,
-                                        shuffle=False,
                                         num_workers=multiprocessing.cpu_count())
 
             return test_dataloader  
 
     def level_dataloader(self, stage, level):
         level_train_set, level_valid_set, level_test_set = self.preprocessor(level=level) 
+
+        train_sampler = RandomSampler(level_train_set)
+        valid_sampler = SequentialSampler(level_valid_set)
+        test_sampler = SequentialSampler(level_test_set)
         
         if stage == 'fit':
             train_dataloader = DataLoader(dataset=level_train_set,
+                                        sampler=train_sampler,
                                         batch_size=self.batch_size,
-                                        shuffle=True,
                                         num_workers=multiprocessing.cpu_count())
 
             val_dataloader = DataLoader(dataset=level_valid_set,
+                                        sampler=valid_sampler,
                                         batch_size=self.batch_size,
-                                        shuffle=False,
                                         num_workers=multiprocessing.cpu_count())
 
             return train_dataloader, val_dataloader
 
         elif stage == 'test':
             test_dataloader = DataLoader(dataset=level_test_set,
+                                        sampler=test_sampler,
                                         batch_size=self.batch_size,
-                                        shuffle=False,
                                         num_workers=multiprocessing.cpu_count())
 
             return test_dataloader
+        
+    def section_dataloader(self):
+        pass
+    

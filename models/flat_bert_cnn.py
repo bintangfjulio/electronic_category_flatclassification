@@ -1,21 +1,42 @@
 import os
 import torch
 import random
+import pandas as pd
 import torch.nn as nn
 import numpy as np
-import pandas as pd
+import torch.nn.functional as F
 
+from transformers import BertModel, AdamW, get_linear_schedule_with_warmup
 from statistics import mean
 from tqdm import tqdm
-from models.bert import BERT
-from models.bert_cnn import BERT_CNN
-from models.bert_lstm import BERT_LSTM
 from torchmetrics.classification import MulticlassAccuracy
 from torchmetrics.classification import MulticlassF1Score
 
-class Flat_FineTuning(object):
-    def __init__(self, seed, tree, max_epochs, lr, early_stop_patience):
-        super(Flat_FineTuning, self).__init__() 
+class BERT_CNN(nn.Module):
+    def __init__(self, num_classes, bert_model, dropout, input_size=768, window_sizes=[1, 2, 3, 4, 5], in_channels=4, out_channels=32):
+        super(BERT_CNN, self).__init__()
+        self.pretrained_bert = BertModel.from_pretrained(bert_model, output_hidden_states=True)
+        self.convolutional_layers = nn.ModuleList([nn.Conv2d(in_channels, out_channels, (window_size, input_size)) for window_size in window_sizes])
+        self.dropout = nn.Dropout(dropout) 
+        self.output_layer = nn.Linear(len(window_sizes) * out_channels, num_classes)
+
+    def forward(self, input_ids):
+        bert_output = self.pretrained_bert(input_ids=input_ids)
+        all_hidden_states = bert_output[2]
+        all_hidden_states = torch.stack(all_hidden_states, dim=1)
+        selected_hidden_states = all_hidden_states[:, -4:]
+
+        pooler = [F.relu(layer(selected_hidden_states).squeeze(3)) for layer in self.convolutional_layers] 
+        max_pooler = [F.max_pool1d(features, features.size(2)).squeeze(2) for features in pooler]  
+
+        flatten = torch.cat(max_pooler, dim=1) 
+        preds = self.output_layer(self.dropout(flatten))
+        
+        return preds
+
+class Flat_Trainer(object):
+    def __init__(self, tree, bert_model, seed, max_epochs, lr, dropout):
+        super(Flat_Trainer, self).__init__()
         np.random.seed(seed) 
         torch.manual_seed(seed)
         random.seed(seed)
@@ -27,32 +48,12 @@ class Flat_FineTuning(object):
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.tree = tree
+        self.bert_model = bert_model
         self.max_epochs = max_epochs
         self.lr = lr
-        self.early_stop_patience = early_stop_patience
+        self.dropout = dropout
         self.criterion = nn.CrossEntropyLoss()
-
-    def initialize_model(self, model, num_classes):
-        if model == 'bert':
-            self.model = BERT(num_classes=num_classes)
-
-        elif model == 'bert-cnn':
-            self.model = BERT_CNN(num_classes=num_classes) 
-
-        elif model == 'bert-bilstm':
-            self.model = BERT_LSTM(num_classes=num_classes, bidirectional=True)
-
-        elif model == 'bert-lstm':
-            self.model = BERT_LSTM(num_classes=num_classes, bidirectional=False)
-
-        self.model.to(self.device)
-
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
-        self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=0.5, total_iters=100) 
-
-        self.accuracy_metric = MulticlassAccuracy(num_classes=num_classes).to(self.device)
-        self.f1_micro_metric = MulticlassF1Score(num_classes=num_classes, average='micro').to(self.device)
-        self.f1_macro_metric = MulticlassF1Score(num_classes=num_classes, average='macro').to(self.device)
+        self.softmax = nn.Softmax(dim=1)
 
     def scoring_result(self, preds, target):
         accuracy = self.accuracy_metric(preds, target)
@@ -60,6 +61,17 @@ class Flat_FineTuning(object):
         f1_macro = self.f1_macro_metric(preds, target)
 
         return accuracy, f1_micro, f1_macro
+
+    def initialize_model(self, num_classes, train_size):
+        self.model = BERT_CNN(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout)
+        self.model.to(self.device)
+
+        self.optimizer = AdamW(self.model.parameters(), lr=self.lr, weight_decay=0.9)
+        self.scheduler = get_linear_schedule_with_warmup(self.optimizer, num_warmup_steps=0, num_training_steps=train_size * self.max_epochs) 
+
+        self.accuracy_metric = MulticlassAccuracy(num_classes=num_classes).to(self.device)
+        self.f1_micro_metric = MulticlassF1Score(num_classes=num_classes, average='micro').to(self.device)
+        self.f1_macro_metric = MulticlassF1Score(num_classes=num_classes, average='macro').to(self.device)
 
     def training_step(self):
         self.model.train(True)
@@ -79,9 +91,7 @@ class Flat_FineTuning(object):
 
             preds = self.model(input_ids=input_ids)
             loss = self.criterion(preds, target)
-
-            preds = torch.argmax(preds, dim=1)
-            target = torch.argmax(target, dim=1)
+            preds = self.softmax(preds)
 
             accuracy, f1_micro, f1_macro = self.scoring_result(preds=preds, target=target)
 
@@ -94,6 +104,7 @@ class Flat_FineTuning(object):
                                         " | Train Step Accuracy : " + str(round(accuracy.item(), 2)) + 
                                         " | Train Step F1 Micro : " + str(round(f1_micro.item(), 2)) +
                                         " | Train Step F1 Macro : " + str(round(f1_macro.item(), 2)))
+
 
             loss.backward()
             self.optimizer.step()
@@ -126,9 +137,7 @@ class Flat_FineTuning(object):
 
                 preds = self.model(input_ids=input_ids)
                 loss = self.criterion(preds, target)
-
-                preds = torch.argmax(preds, dim=1)
-                target = torch.argmax(target, dim=1)
+                preds = self.softmax(preds)
 
                 accuracy, f1_micro, f1_macro = self.scoring_result(preds=preds, target=target)
 
@@ -141,7 +150,7 @@ class Flat_FineTuning(object):
                                             " | Validation Step Accuracy : " + str(round(accuracy.item(), 2)) + 
                                             " | Validation Step F1 Micro : " + str(round(f1_micro.item(), 2)) +
                                             " | Validation Step F1 Macro : " + str(round(f1_macro.item(), 2)))
-
+            
                 self.model.zero_grad()
 
         print("On Epoch Validation Loss: ", round(mean(val_step_loss), 2))
@@ -150,7 +159,7 @@ class Flat_FineTuning(object):
         print("On Epoch Validation F1 Macro: ", round(mean(val_step_f1_macro), 2))
 
         return mean(val_step_loss), mean(val_step_accuracy), mean(val_step_f1_micro), mean(val_step_f1_macro)
-
+    
     def test_step(self):
         self.model.eval()
 
@@ -170,9 +179,7 @@ class Flat_FineTuning(object):
 
                 preds = self.model(input_ids=input_ids)
                 loss = self.criterion(preds, target)
-
-                preds = torch.argmax(preds, dim=1)
-                target = torch.argmax(target, dim=1)
+                preds = self.softmax(preds)
 
                 accuracy, f1_micro, f1_macro = self.scoring_result(preds=preds, target=target)
 
@@ -192,12 +199,12 @@ class Flat_FineTuning(object):
         print("On Epoch Test F1 Macro: ", round(mean(test_step_f1_macro), 2))
 
         return mean(test_step_loss), mean(test_step_accuracy), mean(test_step_f1_micro), mean(test_step_f1_macro)
-        
-    def fit(self, model, datamodule):
-        level_on_nodes_indexed, _, _ = self.tree.generate_hierarchy()        
+    
+    def fit(self, datamodule):
+        level_on_nodes_indexed, _, _ = self.tree.generate_hierarchy()
 
-        fail = 0
-        minimum_loss = 1.00
+        self.model.zero_grad()
+        best_loss = 9.99
 
         train_accuracy_epoch = []
         train_loss_epoch = []
@@ -211,10 +218,8 @@ class Flat_FineTuning(object):
         val_f1_macro_epoch = []
         val_epoch = []
 
-        self.initialize_model(model=model, num_classes=len(level_on_nodes_indexed[len(level_on_nodes_indexed) - 1]))
-        self.model.zero_grad()
-
         self.train_set, self.valid_set = datamodule.flat_dataloader(stage='fit')
+        self.initialize_model(num_classes=len(level_on_nodes_indexed[len(level_on_nodes_indexed) - 1]), train_size=len(self.train_set))
 
         for epoch in range(self.max_epochs):
             print("Training Stage...")
@@ -222,13 +227,13 @@ class Flat_FineTuning(object):
             print("=" * 50)
 
             train_loss, train_accuracy, train_f1_micro, train_f1_macro = self.training_step()
-            
+
             train_loss_epoch.append(train_loss)
             train_accuracy_epoch.append(train_accuracy)
             train_f1_micro_epoch.append(train_f1_micro)
             train_f1_macro_epoch.append(train_f1_macro)
             train_epoch.append(epoch)
-            
+
             print("Validation Stage...")
             print("=" * 50)
 
@@ -240,56 +245,47 @@ class Flat_FineTuning(object):
             val_f1_macro_epoch.append(val_f1_macro)
             val_epoch.append(epoch)
 
-            if round(val_loss, 2) < round(minimum_loss, 2):
-                fail = 0
-                minimum_loss = val_loss
+            if round(val_loss, 2) < round(best_loss, 2):
+                if not os.path.exists(f'checkpoints/flat_result'):
+                    os.makedirs(f'checkpoints/flat_result')
 
-                if not os.path.exists(f'checkpoints/flat_{model}_result'):
-                    os.makedirs(f'checkpoints/flat_{model}_result')
+                if os.path.exists(f'checkpoints/flat_result/temp.pt'):
+                    os.remove(f'checkpoints/flat_result/temp.pt')
+                    
+                torch.save(self.model.state_dict(), f'checkpoints/flat_result/temp.pt')
+                best_loss = val_loss
 
-                if os.path.exists(f'checkpoints/flat_{model}_result/flat_model.pt'):
-                    os.remove(f'checkpoints/flat_{model}_result/flat_model.pt')
-
-                torch.save(self.model.state_dict(), f'checkpoints/flat_{model}_result/flat_model.pt')
-
-            else:
-                fail += 1
-
-            if fail == self.early_stop_patience:
-                break
-
-        if not os.path.exists(f'logs/flat_{model}_result'):
-            os.makedirs(f'logs/flat_{model}_result')
+        if not os.path.exists(f'logs/flat_result'):
+            os.makedirs(f'logs/flat_result')
             
         train_result = pd.DataFrame({'epoch': train_epoch, 'accuracy': train_accuracy_epoch, 'loss': train_loss_epoch, 'f1_micro': train_f1_micro_epoch, 'f1_macro': train_f1_macro_epoch})
         valid_result = pd.DataFrame({'epoch': val_epoch, 'accuracy': val_accuracy_epoch, 'loss': val_loss_epoch, 'f1_micro': val_f1_micro_epoch, 'f1_macro': val_f1_macro_epoch})
         
-        train_result.to_csv(f'logs/flat_{model}_result/train_result.csv', index=False, encoding='utf-8')
-        valid_result.to_csv(f'logs/flat_{model}_result/valid_result.csv', index=False, encoding='utf-8')
+        train_result.to_csv(f'logs/flat_result/train_result.csv', index=False, encoding='utf-8')
+        valid_result.to_csv(f'logs/flat_result/valid_result.csv', index=False, encoding='utf-8')
 
-    def test(self, model, datamodule):
+    def test(self, datamodule):
         test_accuracy_epoch = []
         test_loss_epoch = []
         test_f1_micro_epoch = []
         test_f1_macro_epoch = []
 
-        self.model.load_state_dict(torch.load(f'checkpoints/flat_{model}_result/flat_model.pt'))
+        self.model.load_state_dict(torch.load(f'checkpoints/flat_result/temp.pt'))
         self.model.to(self.device)
 
         self.test_set = datamodule.flat_dataloader(stage='test')
-
         print("Test Stage...")
         print("=" * 50)
-        
+
         test_loss, test_accuracy, test_f1_micro, test_f1_macro = self.test_step()
         
         test_loss_epoch.append(test_loss)
         test_accuracy_epoch.append(test_accuracy)
         test_f1_micro_epoch.append(test_f1_micro)
         test_f1_macro_epoch.append(test_f1_macro)
-                        
-        if not os.path.exists(f'logs/flat_{model}_result'):
-            os.makedirs(f'logs/flat_{model}_result')
+
+        if not os.path.exists(f'logs/flat_result'):
+            os.makedirs(f'logs/flat_result')
                         
         test_result = pd.DataFrame({'accuracy': test_accuracy_epoch, 'loss': test_loss_epoch, 'f1_micro': test_f1_micro_epoch, 'f1_macro': test_f1_macro_epoch})
-        test_result.to_csv(f'logs/flat_{model}_result/test_result.csv', index=False, encoding='utf-8')
+        test_result.to_csv(f'logs/flat_result/test_result.csv', index=False, encoding='utf-8')
