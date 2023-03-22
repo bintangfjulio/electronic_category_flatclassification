@@ -19,13 +19,8 @@ class Preprocessor(object):
         if not os.path.exists('datasets'):
             os.makedirs('datasets')
 
-        if not os.path.exists(f'datasets/{dataset}_product_tokopedia.csv'):
-            version = {
-                'small': '0.1',
-                'large': '0.0'
-            }
-                    
-            file = requests.get(f'https://github.com/bintangfjulio/product_categories_classification/releases/download/{version[dataset]}/{dataset}_product_tokopedia.csv', allow_redirects=True)
+        if not os.path.exists(f'datasets/{dataset}_product_tokopedia.csv'):                    
+            file = requests.get(f'https://github.com/bintangfjulio/product_categories_classification/releases/download/{dataset}/{dataset}_product_tokopedia.csv', allow_redirects=True)
             open(f'datasets/{dataset}_product_tokopedia.csv', 'wb').write(file.content)
 
         self.dataset = pd.read_csv(f'datasets/{dataset}_product_tokopedia.csv')
