@@ -7,7 +7,7 @@ import numpy as np
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
-from transformers import BertModel, AdamW, get_linear_schedule_with_warmup
+from transformers import BertModel
 from statistics import mean
 from tqdm import tqdm
 from torchmetrics.classification import MulticlassAccuracy
@@ -36,7 +36,7 @@ class BERT_CNN(nn.Module):
         return preds
 
 class Flat_Trainer(object):
-    def __init__(self, tree, bert_model, seed, max_epochs, lr, dropout):
+    def __init__(self, tree, bert_model, seed, max_epochs, lr, dropout, patience):
         super(Flat_Trainer, self).__init__()
         np.random.seed(seed) 
         torch.manual_seed(seed)
@@ -55,6 +55,7 @@ class Flat_Trainer(object):
         self.dropout = dropout
         self.criterion = nn.CrossEntropyLoss()
         self.softmax = nn.Softmax(dim=1)
+        self.patience = patience
 
     def scoring_result(self, preds, target):
         accuracy = self.accuracy_metric(preds, target)
@@ -64,12 +65,12 @@ class Flat_Trainer(object):
 
         return accuracy, f1_micro, f1_macro, f1_weighted
 
-    def initialize_model(self, num_classes, train_size):
+    def initialize_model(self, num_classes):
         self.model = BERT_CNN(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout)
         self.model.to(self.device)
 
-        self.optimizer = AdamW(self.model.parameters(), lr=self.lr, weight_decay=0.9)
-        self.scheduler = get_linear_schedule_with_warmup(self.optimizer, num_warmup_steps=0, num_training_steps=train_size * self.max_epochs) 
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=0.5, total_iters=5) 
 
         self.accuracy_metric = MulticlassAccuracy(num_classes=num_classes).to(self.device)
         self.f1_micro_metric = MulticlassF1Score(num_classes=num_classes, average='micro').to(self.device)
@@ -232,12 +233,16 @@ class Flat_Trainer(object):
         val_epoch = []
 
         self.train_set, self.valid_set = datamodule.flat_dataloader(stage='fit')
-        self.initialize_model(num_classes=len(level_on_nodes_indexed[len(level_on_nodes_indexed) - 1]), train_size=len(self.train_set))
-        
+        self.initialize_model(num_classes=len(level_on_nodes_indexed[len(level_on_nodes_indexed) - 1]))
         self.model.zero_grad()
+
         best_loss = 9.99
+        fail = 0
 
         for epoch in range(self.max_epochs):
+            if fail == self.patience:
+                break
+                
             print("Training Stage...")
             print("Epoch ", epoch)
             print("=" * 50)
@@ -277,6 +282,10 @@ class Flat_Trainer(object):
                     
                 torch.save(checkpoint, 'checkpoints/flat_result/temp.pt')
                 best_loss = val_loss
+                fail = 0
+
+            else:
+                fail += 1
 
         if not os.path.exists('logs/flat_result'):
             os.makedirs('logs/flat_result')

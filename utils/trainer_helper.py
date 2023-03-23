@@ -3,7 +3,7 @@ from models.flat_bert_cnn import Flat_Trainer
 from models.level_bert_cnn import Level_Trainer
 
 class Trainer_Helper(object):
-    def __init__(self, method, dataset, bert_model, seed, max_epochs, lr, dropout):
+    def __init__(self, method, dataset, bert_model, seed, max_epochs, lr, dropout, patience):
         tree = Tree_Helper(tree_file=f'datasets/{dataset}_hierarchy.tree')
 
         if method == 'flat':
@@ -12,7 +12,8 @@ class Trainer_Helper(object):
                                         seed=seed,
                                         max_epochs=max_epochs,
                                         lr=lr,
-                                        dropout=dropout)
+                                        dropout=dropout,
+                                        patience=patience)
 
         elif method == 'level':
             self.trainer = Level_Trainer(tree=tree,
@@ -20,7 +21,8 @@ class Trainer_Helper(object):
                                         seed=seed,
                                         max_epochs=max_epochs,
                                         lr=lr,
-                                        dropout=dropout)
+                                        dropout=dropout,
+                                        patience=patience)
 
         elif method == 'section':
             pass
