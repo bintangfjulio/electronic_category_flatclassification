@@ -253,8 +253,13 @@ class Flat_Trainer(object):
 
                 if os.path.exists(f'checkpoints/flat_result/temp.pt'):
                     os.remove(f'checkpoints/flat_result/temp.pt')
+
+                checkpoint = {
+                    "epoch": epoch,
+                    "model_state": self.model.state_dict(),
+                }
                     
-                torch.save(self.model.state_dict(), f'checkpoints/flat_result/temp.pt')
+                torch.save(checkpoint, f'checkpoints/flat_result/temp.pt')
                 best_loss = val_loss
 
         if not os.path.exists(f'logs/flat_result'):
@@ -272,11 +277,13 @@ class Flat_Trainer(object):
         test_f1_micro_epoch = []
         test_f1_macro_epoch = []
 
-        self.model.load_state_dict(torch.load(f'checkpoints/flat_result/temp.pt'))
+        checkpoint = torch.load(f'checkpoints/flat_result/temp.pt')
+        self.model.load_state_dict(checkpoint['model_state'])
         self.model.to(self.device)
 
         self.test_set = datamodule.flat_dataloader(stage='test')
         print("Test Stage...")
+        print("Loading Checkpoint on Epoch", checkpoint['epoch'])
         print("=" * 50)
 
         test_loss, test_accuracy, test_f1_micro, test_f1_macro = self.test_step()
