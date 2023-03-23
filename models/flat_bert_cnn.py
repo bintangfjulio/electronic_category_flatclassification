@@ -66,8 +66,11 @@ class Flat_Trainer(object):
         self.model = BERT_CNN(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout)
         self.model.to(self.device)
 
-        self.optimizer = AdamW(self.model.parameters(), lr=self.lr, weight_decay=0.9)
-        self.scheduler = get_linear_schedule_with_warmup(self.optimizer, num_warmup_steps=0, num_training_steps=train_size * self.max_epochs) 
+        # self.optimizer = AdamW(self.model.parameters(), lr=self.lr, weight_decay=0.9)
+        # self.scheduler = get_linear_schedule_with_warmup(self.optimizer, num_warmup_steps=0, num_training_steps=train_size * self.max_epochs) 
+
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=0.5, total_iters=5) 
 
         self.accuracy_metric = MulticlassAccuracy(num_classes=num_classes).to(self.device)
         self.f1_micro_metric = MulticlassF1Score(num_classes=num_classes, average='micro').to(self.device)
