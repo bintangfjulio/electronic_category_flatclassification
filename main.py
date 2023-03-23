@@ -20,3 +20,4 @@ if __name__ == "__main__":
 
     trainer.fit(datamodule=datamodule)
     trainer.test(datamodule=datamodule)
+    trainer.create_graph()

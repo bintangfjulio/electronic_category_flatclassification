@@ -30,4 +30,6 @@ class Trainer_Helper(object):
 
     def test(self, datamodule):
         self.trainer.test(datamodule=datamodule)
-        
+
+    def create_graph(self):
+        self.trainer.create_graph()

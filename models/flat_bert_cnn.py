@@ -5,6 +5,7 @@ import pandas as pd
 import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
+import matplotlib.pyplot as plt
 
 from transformers import BertModel, AdamW, get_linear_schedule_with_warmup
 from statistics import mean
@@ -22,9 +23,9 @@ class BERT_CNN(nn.Module):
 
     def forward(self, input_ids):
         bert_output = self.pretrained_bert(input_ids=input_ids)
-        all_hidden_states = bert_output[2]
-        all_hidden_states = torch.stack(all_hidden_states, dim=1)
-        selected_hidden_states = all_hidden_states[:, -4:]
+        bert_hidden_states = bert_output[2]
+        bert_hidden_states = torch.stack(bert_hidden_states, dim=1)
+        selected_hidden_states = bert_hidden_states[:, -4:]
 
         pooler = [F.relu(layer(selected_hidden_states).squeeze(3)) for layer in self.convolutional_layers] 
         max_pooler = [F.max_pool1d(features, features.size(2)).squeeze(2) for features in pooler]  
@@ -66,11 +67,8 @@ class Flat_Trainer(object):
         self.model = BERT_CNN(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout)
         self.model.to(self.device)
 
-        # self.optimizer = AdamW(self.model.parameters(), lr=self.lr, weight_decay=0.9)
-        # self.scheduler = get_linear_schedule_with_warmup(self.optimizer, num_warmup_steps=0, num_training_steps=train_size * self.max_epochs) 
-
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
-        self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=0.5, total_iters=5) 
+        self.optimizer = AdamW(self.model.parameters(), lr=self.lr, weight_decay=0.9)
+        self.scheduler = get_linear_schedule_with_warmup(self.optimizer, num_warmup_steps=0, num_training_steps=train_size * self.max_epochs) 
 
         self.accuracy_metric = MulticlassAccuracy(num_classes=num_classes).to(self.device)
         self.f1_micro_metric = MulticlassF1Score(num_classes=num_classes, average='micro').to(self.device)
@@ -248,28 +246,28 @@ class Flat_Trainer(object):
             val_epoch.append(epoch)
 
             if round(val_loss, 2) < round(best_loss, 2):
-                if not os.path.exists(f'checkpoints/flat_result'):
-                    os.makedirs(f'checkpoints/flat_result')
+                if not os.path.exists('checkpoints/flat_result'):
+                    os.makedirs('checkpoints/flat_result')
 
-                if os.path.exists(f'checkpoints/flat_result/temp.pt'):
-                    os.remove(f'checkpoints/flat_result/temp.pt')
+                if os.path.exists('checkpoints/flat_result/temp.pt'):
+                    os.remove('checkpoints/flat_result/temp.pt')
 
                 checkpoint = {
                     "epoch": epoch,
                     "model_state": self.model.state_dict(),
                 }
                     
-                torch.save(checkpoint, f'checkpoints/flat_result/temp.pt')
+                torch.save(checkpoint, 'checkpoints/flat_result/temp.pt')
                 best_loss = val_loss
 
-        if not os.path.exists(f'logs/flat_result'):
-            os.makedirs(f'logs/flat_result')
+        if not os.path.exists('logs/flat_result'):
+            os.makedirs('logs/flat_result')
             
         train_result = pd.DataFrame({'epoch': train_epoch, 'accuracy': train_accuracy_epoch, 'loss': train_loss_epoch, 'f1_micro': train_f1_micro_epoch, 'f1_macro': train_f1_macro_epoch})
         valid_result = pd.DataFrame({'epoch': val_epoch, 'accuracy': val_accuracy_epoch, 'loss': val_loss_epoch, 'f1_micro': val_f1_micro_epoch, 'f1_macro': val_f1_macro_epoch})
         
-        train_result.to_csv(f'logs/flat_result/train_result.csv', index=False, encoding='utf-8')
-        valid_result.to_csv(f'logs/flat_result/valid_result.csv', index=False, encoding='utf-8')
+        train_result.to_csv('logs/flat_result/train_result.csv', index=False, encoding='utf-8')
+        valid_result.to_csv('logs/flat_result/valid_result.csv', index=False, encoding='utf-8')
 
     def test(self, datamodule):
         test_accuracy_epoch = []
@@ -277,7 +275,7 @@ class Flat_Trainer(object):
         test_f1_micro_epoch = []
         test_f1_macro_epoch = []
 
-        checkpoint = torch.load(f'checkpoints/flat_result/temp.pt')
+        checkpoint = torch.load('checkpoints/flat_result/temp.pt')
         self.model.load_state_dict(checkpoint['model_state'])
         self.model.to(self.device)
 
@@ -293,8 +291,32 @@ class Flat_Trainer(object):
         test_f1_micro_epoch.append(test_f1_micro)
         test_f1_macro_epoch.append(test_f1_macro)
 
-        if not os.path.exists(f'logs/flat_result'):
-            os.makedirs(f'logs/flat_result')
+        if not os.path.exists('logs/flat_result'):
+            os.makedirs('logs/flat_result')
                         
         test_result = pd.DataFrame({'accuracy': test_accuracy_epoch, 'loss': test_loss_epoch, 'f1_micro': test_f1_micro_epoch, 'f1_macro': test_f1_macro_epoch})
-        test_result.to_csv(f'logs/flat_result/test_result.csv', index=False, encoding='utf-8')
+        test_result.to_csv('logs/flat_result/test_result.csv', index=False, encoding='utf-8')
+
+    def create_graph(self):
+        pd.options.display.float_format = '{:,.2f}'.format        
+        train_log = pd.read_csv('logs/flat_result/train_result.csv')
+        valid_log = pd.read_csv('logs/flat_result/valid_result.csv')
+
+        for metric in ['accuracy', 'loss', 'f1_micro', 'f1_macro']:
+            plt.xlabel('epoch')
+            plt.ylabel(metric.replace("_", " ").title())
+            plt.plot(train_log['epoch'], train_log[metric], marker='o', label='Train')
+            plt.plot(valid_log['epoch'], valid_log[metric], marker='o', label='Validation')
+
+            for data_stage in [train_log[metric], valid_log[metric]]:
+                for x_epoch, y_sc in enumerate(data_stage):
+                    y_sc_lbl = '{:.2f}'.format(y_sc)
+
+                    plt.annotate(y_sc_lbl,
+                                (x_epoch, y_sc),
+                                textcoords='offset points',
+                                xytext=(0,4),
+                                ha='center')
+                
+            plt.legend()
+            plt.savefig(f'train_valid_{metric}')
