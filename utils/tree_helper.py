@@ -70,4 +70,3 @@ class Tree_Helper(object):
             level_on_nodes_indexed[level] = node_with_idx
 
         return level_on_nodes_indexed, idx_on_section, section_on_idx
-    

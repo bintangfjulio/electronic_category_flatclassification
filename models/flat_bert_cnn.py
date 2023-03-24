@@ -272,15 +272,15 @@ class Flat_Trainer(object):
                 if not os.path.exists('checkpoints/flat_result'):
                     os.makedirs('checkpoints/flat_result')
 
-                if os.path.exists('checkpoints/flat_result/temp.pt'):
-                    os.remove('checkpoints/flat_result/temp.pt')
+                if os.path.exists('checkpoints/flat_result/flat_temp.pt'):
+                    os.remove('checkpoints/flat_result/flat_temp.pt')
 
                 checkpoint = {
                     "epoch": epoch,
                     "model_state": self.model.state_dict(),
                 }
                     
-                torch.save(checkpoint, 'checkpoints/flat_result/temp.pt')
+                torch.save(checkpoint, 'checkpoints/flat_result/flat_temp.pt')
                 best_loss = val_loss
                 fail = 0
 
@@ -303,7 +303,7 @@ class Flat_Trainer(object):
         test_f1_macro_epoch = []
         test_f1_weighted_epoch = []
 
-        checkpoint = torch.load('checkpoints/flat_result/temp.pt')
+        checkpoint = torch.load('checkpoints/flat_result/flat_temp.pt')
         self.model.load_state_dict(checkpoint['model_state'])
         self.model.to(self.device)
 
@@ -348,4 +348,4 @@ class Flat_Trainer(object):
                                 ha='center')
                 
             plt.legend()
-            plt.savefig(f'train_valid_{metric}')
+            plt.savefig(f'{metric}_graph')
