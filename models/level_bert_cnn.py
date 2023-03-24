@@ -84,7 +84,7 @@ class Level_Trainer(object):
 
         self.model.to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
-        self.output_layer = nn.Linear(BERT_CNN.get_window_length() * BERT_CNN.get_out_channels_length(), num_classes)
+        self.output_layer = nn.Linear(self.model.get_window_length() * self.model.get_out_channels_length(), num_classes)
 
         # if self.output_weight is not None:
         #     self.output_layer.load_state_dict(self.output_weight)
@@ -338,7 +338,7 @@ class Level_Trainer(object):
                                 os.remove(f'checkpoints/level_result/best_weight/level_{str(i_level)}_temp.pt')
 
                             shutil.copy(f'checkpoints/level_result/level_{str(i_level)}_temp.pt', f'checkpoints/level_result/best_weight/level_{str(i_level)}_temp.pt') 
-                            shutil.copy(f'checkpoints/level_result/level_{str(i_level)}_output.pt', f'checkpoints/level_result/best_weight/level_{str(i_level)}_output.pt')
+                            # shutil.copy(f'checkpoints/level_result/level_{str(i_level)}_output.pt', f'checkpoints/level_result/best_weight/level_{str(i_level)}_output.pt')
 
                         fail = 0
                         best_loss = val_loss
