@@ -331,14 +331,14 @@ class Level_Trainer(object):
                 if level == (num_level - 1):
                     if round(val_loss, 2) < round(best_loss, 2):
                         for i_level in range(num_level):
-                            if not os.path.exists(f'checkpoints/level_result/best_weight'):
-                                os.makedirs(f'checkpoints/level_result/best_weight')
+                            if not os.path.exists(f'checkpoints/level_result/best_parameters'):
+                                os.makedirs(f'checkpoints/level_result/best_parameters')
 
-                            if os.path.exists(f'checkpoints/level_result/best_weight/level_{str(i_level)}_temp.pt'):
-                                os.remove(f'checkpoints/level_result/best_weight/level_{str(i_level)}_temp.pt')
+                            if os.path.exists(f'checkpoints/level_result/best_parameters/level_{str(i_level)}_temp.pt'):
+                                os.remove(f'checkpoints/level_result/best_parameters/level_{str(i_level)}_temp.pt')
 
-                            shutil.copy(f'checkpoints/level_result/level_{str(i_level)}_temp.pt', f'checkpoints/level_result/best_weight/level_{str(i_level)}_temp.pt') 
-                            # shutil.copy(f'checkpoints/level_result/level_{str(i_level)}_output.pt', f'checkpoints/level_result/best_weight/level_{str(i_level)}_output.pt')
+                            shutil.copy(f'checkpoints/level_result/level_{str(i_level)}_temp.pt', f'checkpoints/level_result/best_parameters/level_{str(i_level)}_temp.pt') 
+                            # shutil.copy(f'checkpoints/level_result/level_{str(i_level)}_output.pt', f'checkpoints/level_result/best_parameters/level_{str(i_level)}_output.pt')
 
                         fail = 0
                         best_loss = val_loss
@@ -367,8 +367,8 @@ class Level_Trainer(object):
         test_level = []
 
         for level in range(num_level):
-            self.level_weight  = torch.load(f'checkpoints/level_result/best_weight/level_{str(level)}_temp.pt')
-            # self.output_weight = torch.load(f'checkpoints/level_result/best_weight/level_{str(level)}_output.pt')
+            self.level_weight  = torch.load(f'checkpoints/level_result/best_parameters/level_{str(level)}_temp.pt')
+            # self.output_weight = torch.load(f'checkpoints/level_result/best_parameters/level_{str(level)}_output.pt')
 
             self.initialize_model(num_classes=len(level_on_nodes_indexed[level])) 
             self.test_set = datamodule.level_dataloader(stage='test', level=level)
