@@ -6,6 +6,7 @@ import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 
 from transformers import BertModel
 from statistics import mean
@@ -332,20 +333,34 @@ class Flat_Trainer(object):
         valid_log = pd.read_csv('logs/flat_result/valid_result.csv')
 
         for metric in ['accuracy', 'loss', 'f1_micro', 'f1_macro', 'f1_weighted']:
-            plt.xlabel('epoch')
-            plt.ylabel(metric.replace("_", " ").title())
+            plt.xlabel('Epoch')
+            label = metric.replace("_", " ").title()
+            plt.ylabel(label)
             plt.plot(train_log['epoch'], train_log[metric], marker='o', label='Train')
             plt.plot(valid_log['epoch'], valid_log[metric], marker='o', label='Validation')
+            plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
+            
+            if metric == 'loss':
+                best_train = round(train_log[metric].min(), 2)
+                best_val = round(valid_log[metric].min(), 2)
 
-            for data_stage in [train_log[metric], valid_log[metric]]:
+            else:
+                best_train = round(train_log[metric].max() * 100, 2)
+                best_val = round(valid_log[metric].max() * 100, 2)
+
+            plt.figtext(.5, .91, f'Best Flat Model Train {label}: {best_train}%\nBest Flat Model Validation {label}: {best_val}%', fontsize='medium', ha='center')
+
+            for stage, data_stage in enumerate([train_log[metric], valid_log[metric]]):
                 for x_epoch, y_sc in enumerate(data_stage):
                     y_sc_lbl = '{:.2f}'.format(y_sc)
 
                     plt.annotate(y_sc_lbl,
                                 (x_epoch, y_sc),
                                 textcoords='offset points',
-                                xytext=(0,4),
-                                ha='center')
-                
+                                xytext=(0, 4),
+                                fontsize='small',
+                                ha='right' if stage == 0 else 'left')
+                    
             plt.legend()
-            plt.savefig(f'{metric}_graph')
+            plt.savefig(f'logs/flat_result/flat_{metric}_graph')
+            plt.clf()

@@ -7,6 +7,7 @@ import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 
 from transformers import BertModel
 from statistics import mean
@@ -20,6 +21,8 @@ class BERT_CNN(nn.Module):
         self.pretrained_bert = BertModel.from_pretrained(bert_model, output_hidden_states=True)
         self.convolutional_layers = nn.ModuleList([nn.Conv2d(in_channels, out_channels, (window_size, input_size)) for window_size in window_sizes])
         self.dropout = nn.Dropout(dropout) 
+        self.window_len = len(window_sizes)
+        self.out_channels_len = out_channels
 
     def forward(self, input_ids):
         bert_output = self.pretrained_bert(input_ids=input_ids)
@@ -34,6 +37,12 @@ class BERT_CNN(nn.Module):
         logits = self.dropout(flatten)
         
         return logits
+    
+    def get_window_length(self):
+        return self.window_len
+    
+    def get_out_channels_length(self):
+        return self.out_channels_len
 
 class Level_Trainer(object):
     def __init__(self, tree, bert_model, seed, max_epochs, lr, dropout, patience):
@@ -75,7 +84,7 @@ class Level_Trainer(object):
 
         self.model.to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
-        self.output_layer = nn.Linear(768, num_classes)
+        self.output_layer = nn.Linear(BERT_CNN.get_window_length * BERT_CNN.get_out_channels_length, num_classes)
 
         # if self.output_weight is not None:
         #     self.output_layer.load_state_dict(self.output_weight)
@@ -337,14 +346,14 @@ class Level_Trainer(object):
                     else:
                         fail += 1
 
-        if not os.path.exists(f'logs/level_result'):
-            os.makedirs(f'logs/level_result')
+        if not os.path.exists('logs/level_result'):
+            os.makedirs('logs/level_result')
 
         train_result = pd.DataFrame({'epoch': train_epoch, 'level': train_level, 'accuracy': train_accuracy_epoch, 'loss': train_loss_epoch, 'f1_micro': train_f1_micro_epoch, 'f1_macro': train_f1_macro_epoch, 'f1_weighted': train_f1_weighted_epoch})
         valid_result = pd.DataFrame({'epoch': val_epoch, 'level': val_level, 'accuracy': val_accuracy_epoch, 'loss': val_loss_epoch, 'f1_micro': val_f1_micro_epoch, 'f1_macro': val_f1_macro_epoch, 'f1_weighted': val_f1_weighted_epoch})
         
-        train_result.to_csv(f'logs/level_result/train_result.csv', index=False, encoding='utf-8')
-        valid_result.to_csv(f'logs/level_result/valid_result.csv', index=False, encoding='utf-8')
+        train_result.to_csv('logs/level_result/train_result.csv', index=False, encoding='utf-8')
+        valid_result.to_csv('logs/level_result/valid_result.csv', index=False, encoding='utf-8')
 
     def test(self, datamodule):
         level_on_nodes_indexed, _, _ = self.tree.generate_hierarchy() 
@@ -378,11 +387,11 @@ class Level_Trainer(object):
             test_f1_weighted_epoch.append(test_f1_weighted)
             test_level.append(level)
 
-        if not os.path.exists(f'logs/level_result'):
-            os.makedirs(f'logs/level_result')
+        if not os.path.exists('logs/level_result'):
+            os.makedirs('logs/level_result')
 
         test_result = pd.DataFrame({'level': test_level, 'accuracy': test_accuracy_epoch, 'loss': test_loss_epoch, 'f1_micro': test_f1_micro_epoch, 'f1_macro': test_f1_macro_epoch, 'f1_weighted': test_f1_weighted_epoch})
-        test_result.to_csv(f'logs/level_result/test_result.csv', index=False, encoding='utf-8')
+        test_result.to_csv('logs/level_result/test_result.csv', index=False, encoding='utf-8')
 
     def create_graph(self):
         level_on_nodes_indexed, _, _ = self.tree.generate_hierarchy()
@@ -390,27 +399,41 @@ class Level_Trainer(object):
 
         for level in range(num_level):
             pd.options.display.float_format = '{:,.2f}'.format        
-            train_log = pd.read_csv('logs/flat_result/train_result.csv')
-            valid_log = pd.read_csv('logs/flat_result/valid_result.csv')
+            train_log = pd.read_csv('logs/level_result/train_result.csv')
+            valid_log = pd.read_csv('logs/level_result/valid_result.csv')
 
             train_log = train_log[train_log.level == level]
             valid_log = valid_log[valid_log.level == level]
 
             for metric in ['accuracy', 'loss', 'f1_micro', 'f1_macro', 'f1_weighted']:
-                plt.xlabel('epoch')
-                plt.ylabel(metric.replace("_", " ").title())
+                plt.xlabel('Epoch')
+                label = metric.replace("_", " ").title()
+                plt.ylabel(label)
                 plt.plot(train_log['epoch'], train_log[metric], marker='o', label='Train')
                 plt.plot(valid_log['epoch'], valid_log[metric], marker='o', label='Validation')
+                plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
+                
+                if metric == 'loss':
+                    best_train = round(train_log[metric].min(), 2)
+                    best_val = round(valid_log[metric].min(), 2)
 
-                for data_stage in [train_log[metric], valid_log[metric]]:
+                else:
+                    best_train = round(train_log[metric].max() * 100, 2)
+                    best_val = round(valid_log[metric].max() * 100, 2)
+
+                plt.figtext(.5, .91, f'Best Flat Model Train {label}: {best_train}%\nBest Flat Model Validation {label}: {best_val}%', fontsize='medium', ha='center')
+
+                for stage, data_stage in enumerate([train_log[metric], valid_log[metric]]):
                     for x_epoch, y_sc in enumerate(data_stage):
                         y_sc_lbl = '{:.2f}'.format(y_sc)
 
                         plt.annotate(y_sc_lbl,
                                     (x_epoch, y_sc),
                                     textcoords='offset points',
-                                    xytext=(0,4),
-                                    ha='center')
-                    
+                                    xytext=(0, 4),
+                                    fontsize='small',
+                                    ha='right' if stage == 0 else 'left')
+                        
                 plt.legend()
-                plt.savefig(f'{metric}_level_{level}_graph')
+                plt.savefig(f'logs/level_result/level_{level}_{metric}_graph')
+                plt.clf()
