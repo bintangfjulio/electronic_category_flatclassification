@@ -66,7 +66,7 @@ class Level_Trainer(object):
         self.softmax = nn.Softmax(dim=1)
         self.patience = patience
         self.level_weight = None
-        # self.output_weight = None
+        self.output_weight = None
     
     def scoring_result(self, preds, target):
         accuracy = self.accuracy_metric(preds, target)
@@ -84,13 +84,16 @@ class Level_Trainer(object):
 
         self.model.to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=0.5, total_iters=5) 
+
         self.output_layer = nn.Linear(self.model.get_window_length() * self.model.get_out_channels_length(), num_classes)
 
-        # if self.output_weight is not None:
-        #     self.output_layer.load_state_dict(self.output_weight)
+        if self.output_weight is not None:
+            self.output_layer.load_state_dict(self.output_weight)
 
         self.output_layer.to(self.device)
-        self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=0.5, total_iters=5) 
+        # self.optimizer_output = torch.optim.Adam(self.output_layer.parameters(), lr=self.lr)
+        # self.scheduler_output = torch.optim.lr_scheduler.LinearLR(self.optimizer_output, start_factor=0.5, total_iters=5) 
 
         self.accuracy_metric = MulticlassAccuracy(num_classes=num_classes).to(self.device)
         self.f1_micro_metric = MulticlassF1Score(num_classes=num_classes, average='micro').to(self.device)
@@ -270,7 +273,8 @@ class Level_Trainer(object):
 
             for level in range(num_level):
                 if epoch > 0:
-                    # self.output_weight = torch.load(f'checkpoints/level_result/level_{str(level)}_output.pt')
+                    self.output_weight = torch.load(f'checkpoints/level_result/level_{str(level)}_output.pt')
+
                     if level == 0:
                         self.level_weight = torch.load(f'checkpoints/level_result/level_{str(level)}_temp.pt')
 
@@ -310,10 +314,10 @@ class Level_Trainer(object):
 
                 torch.save(checkpoint, f'checkpoints/level_result/level_{str(level)}_temp.pt')
 
-                # if os.path.exists(f'checkpoints/level_result/level_{str(level)}_output.pt'):
-                #     os.remove(f'checkpoints/level_result/level_{str(level)}_output.pt')
+                if os.path.exists(f'checkpoints/level_result/level_{str(level)}_output.pt'):
+                    os.remove(f'checkpoints/level_result/level_{str(level)}_output.pt')
                 
-                # torch.save(self.output_layer.state_dict(), f'checkpoints/level_result/level_{str(level)}_output.pt')
+                torch.save(self.output_layer.state_dict(), f'checkpoints/level_result/level_{str(level)}_output.pt')
 
                 print("Validation Stage...")
                 print("=" * 50)
@@ -338,7 +342,7 @@ class Level_Trainer(object):
                                 os.remove(f'checkpoints/level_result/best_parameters/level_{str(i_level)}_temp.pt')
 
                             shutil.copy(f'checkpoints/level_result/level_{str(i_level)}_temp.pt', f'checkpoints/level_result/best_parameters/level_{str(i_level)}_temp.pt') 
-                            # shutil.copy(f'checkpoints/level_result/level_{str(i_level)}_output.pt', f'checkpoints/level_result/best_parameters/level_{str(i_level)}_output.pt')
+                            shutil.copy(f'checkpoints/level_result/level_{str(i_level)}_output.pt', f'checkpoints/level_result/best_parameters/level_{str(i_level)}_output.pt')
 
                         fail = 0
                         best_loss = val_loss
@@ -368,7 +372,7 @@ class Level_Trainer(object):
 
         for level in range(num_level):
             self.level_weight  = torch.load(f'checkpoints/level_result/best_parameters/level_{str(level)}_temp.pt')
-            # self.output_weight = torch.load(f'checkpoints/level_result/best_parameters/level_{str(level)}_output.pt')
+            self.output_weight = torch.load(f'checkpoints/level_result/best_parameters/level_{str(level)}_output.pt')
 
             self.initialize_model(num_classes=len(level_on_nodes_indexed[level])) 
             self.test_set = datamodule.level_dataloader(stage='test', level=level)
@@ -421,7 +425,7 @@ class Level_Trainer(object):
                     best_train = round(train_log[metric].max() * 100, 2)
                     best_val = round(valid_log[metric].max() * 100, 2)
 
-                plt.figtext(.5, .91, f'Best Flat Model Train {label}: {best_train}%\nBest Flat Model Validation {label}: {best_val}%', fontsize='medium', ha='center')
+                plt.figtext(.5, .91, f'Best Level {level} Model Train {label}: {best_train}%\nBest Level {level} Model Validation {label}: {best_val}%', fontsize='medium', ha='center')
 
                 for stage, data_stage in enumerate([train_log[metric], valid_log[metric]]):
                     for x_epoch, y_sc in enumerate(data_stage):
