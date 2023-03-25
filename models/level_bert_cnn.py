@@ -92,8 +92,6 @@ class Level_Trainer(object):
             self.output_layer.load_state_dict(self.output_weight)
 
         self.output_layer.to(self.device)
-        self.optimizer_output = torch.optim.Adam(self.output_layer.parameters(), lr=self.lr)
-        self.scheduler_output = torch.optim.lr_scheduler.LinearLR(self.optimizer_output, start_factor=0.5, total_iters=5) 
 
         self.accuracy_metric = MulticlassAccuracy(num_classes=num_classes).to(self.device)
         self.f1_micro_metric = MulticlassF1Score(num_classes=num_classes, average='micro').to(self.device)
@@ -139,9 +137,7 @@ class Level_Trainer(object):
 
             loss.backward()
             self.optimizer.step()
-            self.optimizer_output.step()
             self.scheduler.step()
-            self.scheduler_output.step()
             self.model.zero_grad()
 
         print("On Epoch Train Loss: ", round(mean(train_step_loss), 2))
