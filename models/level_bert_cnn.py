@@ -139,7 +139,9 @@ class Level_Trainer(object):
 
             loss.backward()
             self.optimizer.step()
+            # self.optimizer_output.step()
             self.scheduler.step()
+            # self.scheduler_output.step()
             self.model.zero_grad()
 
         print("On Epoch Train Loss: ", round(mean(train_step_loss), 2))
