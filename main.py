@@ -13,7 +13,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_epochs", type=int, default=20)
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--dropout", type=float, default=0.1)
-    parser.add_argument("--patience", type=int, default=2)
+    parser.add_argument("--patience", type=int, default=5)
     config = vars(parser.parse_args())
 
     datamodule = Preprocessor(method=config['method'], dataset=config['dataset'], batch_size=config['batch_size'], bert_model=config['bert_model']) 
