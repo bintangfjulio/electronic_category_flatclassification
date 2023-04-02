@@ -67,7 +67,6 @@ class Level_Trainer(object):
         self.patience = patience
         self.level_weight = None
         self.output_weight = None
-        self.current_level = None
     
     def scoring_result(self, preds, target):
         accuracy = self.accuracy_metric(preds, target)
@@ -116,12 +115,7 @@ class Level_Trainer(object):
             input_ids = input_ids.to(self.device)
             target = target.to(self.device)
 
-            if self.current_level > 0:
-                with torch.no_grad():
-                    logits = self.model(input_ids=input_ids)
-                    
-            else:
-                logits = self.model(input_ids=input_ids)
+            logits = self.model(input_ids=input_ids)
 
             preds = self.output_layer(logits) 
 
@@ -287,7 +281,6 @@ class Level_Trainer(object):
                     self.level_weight = torch.load(f'checkpoints/level_result/level_{str(level - 1)}_temp.pt')
 
                 self.initialize_model(num_classes=len(level_on_nodes_indexed[level]))
-                self.current_level = level
                 self.model.zero_grad()
 
                 self.train_set, self.valid_set = datamodule.level_dataloader(stage='fit', level=level)
