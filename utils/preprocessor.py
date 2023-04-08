@@ -34,10 +34,14 @@ class Preprocessor(object):
         if self.method == 'section':
             if not (os.path.exists("datasets/section_train_set.pkl") and os.path.exists("datasets/section_valid_set.pkl") and os.path.exists("datasets/section_test_set.pkl")):
                 train_data, test_data = self.split_dataset()
-
+                print("\nPreprocessing Data...")
+                
                 for sequence_idx, splitted_set in enumerate([train_data, test_data]):
                     self.preprocessing_data(dataset=splitted_set, method=self.method, tree=tree, sequence_idx=sequence_idx)
+                    
+                print('[ Preprocessing Completed ]\n')
 
+            print("\nLoading Data...")
             with open('datasets/section_train_set.pkl', 'rb') as train_preprocessed:
                 train_set = pickle.load(train_preprocessed)
             
@@ -46,6 +50,8 @@ class Preprocessor(object):
 
             with open('datasets/section_test_set.pkl', 'rb') as test_preprocessed:
                 test_set = pickle.load(test_preprocessed)
+                
+            print('[ Loading Completed ]\n')
 
         else:
             if not os.path.exists(f"datasets/{self.method}_level_{str(level)}_train_set.pkl") and not os.path.exists(f"datasets/{self.method}_level_{str(level)}_valid_set.pkl") and not os.path.exists(f"datasets/{self.method}_level_{str(level)}_test_set.pkl"):
@@ -62,7 +68,7 @@ class Preprocessor(object):
         return train_set, valid_set, test_set
         
     def split_dataset(self):
-        data = pd.read_csv(self.dataset)
+        data = self.dataset
         data = data.sample(frac=1)
 
         data_len = data.shape[0]
