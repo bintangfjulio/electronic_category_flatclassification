@@ -1,10 +1,11 @@
 from utils.tree_helper import Tree_Helper
 from models.flat_bert_cnn import Flat_Trainer
 from models.level_bert_cnn import Level_Trainer
+from models.section_bert_cnn import Section_Trainer
 
 class Trainer_Helper(object):
     def __init__(self, method, dataset, bert_model, seed, max_epochs, lr, dropout, patience):
-        tree = Tree_Helper(tree_file=f'datasets/{dataset}_hierarchy.tree')
+        tree = Tree_Helper(tree_file=f'datasets/{dataset}_hierarchy.tree', dataset=self.dataset)
 
         if method == 'flat':
             self.trainer = Flat_Trainer(tree=tree,
@@ -25,7 +26,13 @@ class Trainer_Helper(object):
                                         patience=patience)
 
         elif method == 'section':
-            pass
+            self.trainer = Section_Trainer(tree=tree,
+                                        bert_model=bert_model,
+                                        seed=seed,
+                                        max_epochs=max_epochs,
+                                        lr=lr,
+                                        dropout=dropout,
+                                        patience=patience)
 
     def fit(self, datamodule):
         self.trainer.fit(datamodule=datamodule)

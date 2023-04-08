@@ -55,7 +55,7 @@ class Flat_Trainer(object):
         self.lr = lr
         self.dropout = dropout
         self.criterion = nn.CrossEntropyLoss()
-        self.softmax = nn.Softmax(dim=1)
+        self.log_softmax = nn.LogSoftmax(dim=1)
         self.patience = patience
 
     def scoring_result(self, preds, target):
@@ -97,7 +97,7 @@ class Flat_Trainer(object):
 
             preds = self.model(input_ids=input_ids)
             loss = self.criterion(preds, target)
-            preds = self.softmax(preds)
+            preds = self.log_softmax(preds)
 
             accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
 
@@ -146,7 +146,7 @@ class Flat_Trainer(object):
 
                 preds = self.model(input_ids=input_ids)
                 loss = self.criterion(preds, target)
-                preds = self.softmax(preds)
+                preds = self.log_softmax(preds)
 
                 accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
 
@@ -192,7 +192,7 @@ class Flat_Trainer(object):
 
                 preds = self.model(input_ids=input_ids)
                 loss = self.criterion(preds, target)
-                preds = self.softmax(preds)
+                preds = self.log_softmax(preds)
 
                 accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
 
@@ -233,7 +233,7 @@ class Flat_Trainer(object):
         val_f1_weighted_epoch = []
         val_epoch = []
 
-        self.train_set, self.valid_set = datamodule.flat_dataloader(stage='fit')
+        self.train_set, self.valid_set = datamodule.flat_dataloader(stage='fit', tree=self.tree)
         self.initialize_model(num_classes=len(level_on_nodes_indexed[len(level_on_nodes_indexed) - 1]))
         self.model.zero_grad()
 
@@ -308,7 +308,7 @@ class Flat_Trainer(object):
         self.model.load_state_dict(checkpoint['model_state'])
         self.model.to(self.device)
 
-        self.test_set = datamodule.flat_dataloader(stage='test')
+        self.test_set = datamodule.flat_dataloader(stage='test', tree=self.tree)
         print("Test Stage...")
         print("Loading Checkpoint on Epoch", checkpoint['epoch'])
         print("=" * 50)

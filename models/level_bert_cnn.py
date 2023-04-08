@@ -63,7 +63,7 @@ class Level_Trainer(object):
         self.lr = lr
         self.dropout = dropout
         self.criterion = nn.CrossEntropyLoss()
-        self.softmax = nn.Softmax(dim=1)
+        self.log_softmax = nn.LogSoftmax(dim=1)
         self.patience = patience
         self.level_weight = None
         self.output_weight = None
@@ -120,7 +120,7 @@ class Level_Trainer(object):
             preds = self.output_layer(logits) 
 
             loss = self.criterion(preds, target)
-            preds = self.softmax(preds)
+            preds = self.log_softmax(preds)
 
             accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
 
@@ -171,7 +171,7 @@ class Level_Trainer(object):
                 preds = self.output_layer(logits) 
 
                 loss = self.criterion(preds, target)
-                preds = self.softmax(preds)
+                preds = self.log_softmax(preds)
 
                 accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
 
@@ -219,7 +219,7 @@ class Level_Trainer(object):
                 preds = self.output_layer(logits) 
 
                 loss = self.criterion(preds, target)
-                preds = self.softmax(preds)
+                preds = self.log_softmax(preds)
 
                 accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
 
@@ -283,7 +283,7 @@ class Level_Trainer(object):
                 self.initialize_model(num_classes=len(level_on_nodes_indexed[level]))
                 self.model.zero_grad()
 
-                self.train_set, self.valid_set = datamodule.level_dataloader(stage='fit', level=level)
+                self.train_set, self.valid_set = datamodule.level_dataloader(stage='fit', level=level, tree=self.tree)
 
                 print("Training Stage...")
                 print("Epoch ", epoch)
@@ -374,7 +374,7 @@ class Level_Trainer(object):
             self.output_weight = torch.load(f'checkpoints/level_result/best_parameters/level_{str(level)}_output.pt')
 
             self.initialize_model(num_classes=len(level_on_nodes_indexed[level])) 
-            self.test_set = datamodule.level_dataloader(stage='test', level=level)
+            self.test_set = datamodule.level_dataloader(stage='test', level=level, tree=self.tree)
 
             print("Test Stage...")
             print("Loading Checkpoint on Epoch", self.level_weight['epoch'])
