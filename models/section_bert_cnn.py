@@ -58,6 +58,14 @@ class Section_Trainer(object):
         self.log_softmax = nn.LogSoftmax(dim=1)
         self.patience = patience
 
+    def scoring_result(self, preds, target):
+        accuracy = self.accuracy_metric(preds, target)
+        f1_micro = self.f1_micro_metric(preds, target)
+        f1_macro = self.f1_macro_metric(preds, target)
+        f1_weighted = self.f1_weighted_metric(preds, target)
+
+        return accuracy, f1_micro, f1_macro, f1_weighted
+
     def initialize_model(self, num_classes):
         self.model = BERT_CNN(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout)
         self.model.to(self.device)
@@ -69,6 +77,100 @@ class Section_Trainer(object):
         self.f1_micro_metric = MulticlassF1Score(num_classes=num_classes, average='micro').to(self.device)
         self.f1_macro_metric = MulticlassF1Score(num_classes=num_classes, average='macro').to(self.device)
         self.f1_weighted_metric = MulticlassF1Score(num_classes=num_classes, average='weighted').to(self.device)
+
+    def training_step(self):
+        self.model.train(True)
+
+        train_step_loss = []
+        train_step_accuracy = []
+        train_step_f1_micro = []
+        train_step_f1_macro = []
+        train_step_f1_weighted = []
+
+        training_progress = tqdm(self.train_set)
+
+        for train_batch in training_progress:
+            input_ids, target = train_batch
+
+            input_ids = input_ids.to(self.device)
+            target = target.to(self.device)
+
+            preds = self.model(input_ids=input_ids)
+            loss = self.criterion(preds, target)
+            preds = self.log_softmax(preds)
+
+            accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
+
+            train_step_loss.append(loss.item())
+            train_step_accuracy.append(accuracy.item())
+            train_step_f1_micro.append(f1_micro.item())
+            train_step_f1_macro.append(f1_macro.item())
+            train_step_f1_weighted.append(f1_weighted.item())
+            
+            training_progress.set_description("Train Step Loss : " + str(round(loss.item(), 2)) + 
+                                        " | Train Step Accuracy : " + str(round(accuracy.item(), 2)) + 
+                                        " | Train Step F1 Micro : " + str(round(f1_micro.item(), 2)) +
+                                        " | Train Step F1 Weighted : " + str(round(f1_weighted.item(), 2)) +
+                                        " | Train Step F1 Macro : " + str(round(f1_macro.item(), 2)))
+
+            loss.backward()
+            self.optimizer.step()
+            self.scheduler.step()
+            self.model.zero_grad()
+
+        print("On Epoch Train Loss: ", round(mean(train_step_loss), 2))
+        print("On Epoch Train Accuracy: ", round(mean(train_step_accuracy), 2))
+        print("On Epoch Train F1 Micro: ", round(mean(train_step_f1_micro), 2))
+        print("On Epoch Train F1 Macro: ", round(mean(train_step_f1_macro), 2))
+        print("On Epoch Train F1 Weighted: ", round(mean(train_step_f1_weighted), 2))
+
+        return mean(train_step_loss), mean(train_step_accuracy), mean(train_step_f1_micro), mean(train_step_f1_macro), mean(train_step_f1_weighted)
+
+    def validation_step(self):
+        self.model.eval()
+
+        val_step_loss = []
+        val_step_accuracy = []
+        val_step_f1_micro = []
+        val_step_f1_macro = []
+        val_step_f1_weighted = []
+
+        with torch.no_grad():
+            validation_progress = tqdm(self.valid_set)
+
+            for valid_batch in validation_progress:
+                input_ids, target = valid_batch
+
+                input_ids = input_ids.to(self.device)
+                target = target.to(self.device)
+
+                preds = self.model(input_ids=input_ids)
+                loss = self.criterion(preds, target)
+                preds = self.log_softmax(preds)
+
+                accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
+
+                val_step_loss.append(loss.item())
+                val_step_accuracy.append(accuracy.item())
+                val_step_f1_micro.append(f1_micro.item())
+                val_step_f1_macro.append(f1_macro.item())
+                val_step_f1_weighted.append(f1_weighted.item())
+                
+                validation_progress.set_description("Validation Step Loss : " + str(round(loss.item(), 2)) + 
+                                            " | Validation Step Accuracy : " + str(round(accuracy.item(), 2)) + 
+                                            " | Validation Step F1 Micro : " + str(round(f1_micro.item(), 2)) +
+                                            " | Validation Step F1 Weighted : " + str(round(f1_weighted.item(), 2)) +
+                                            " | Validation Step F1 Macro : " + str(round(f1_macro.item(), 2)))
+            
+                self.model.zero_grad()
+
+        print("On Epoch Validation Loss: ", round(mean(val_step_loss), 2))
+        print("On Epoch Validation Accuracy: ", round(mean(val_step_accuracy), 2))
+        print("On Epoch Validation F1 Micro: ", round(mean(val_step_f1_micro), 2))
+        print("On Epoch Validation F1 Macro: ", round(mean(val_step_f1_macro), 2))
+        print("On Epoch Validation F1 Weighted: ", round(mean(val_step_f1_weighted), 2))
+
+        return mean(val_step_loss), mean(val_step_accuracy), mean(val_step_f1_micro), mean(val_step_f1_macro), mean(val_step_f1_weighted)
 
     def fit(self, datamodule):
         _, idx_on_section, _ = self.tree.generate_hierarchy()
