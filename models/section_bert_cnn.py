@@ -209,7 +209,7 @@ class Section_Trainer(object):
 
                 print("Training Stage...")
                 print("Epoch ", epoch)
-                print("Section ", section, " of ", len(section_idx))
+                print("Section", section, "of", len(section_idx))
                 print("=" * 50)
 
                 train_loss, train_accuracy, train_f1_micro, train_f1_macro, train_f1_weighted = self.training_step()
