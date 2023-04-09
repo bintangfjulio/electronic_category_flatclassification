@@ -30,13 +30,13 @@ class Preprocessor(object):
         self.stemmer = StemmerFactory().create_stemmer()
         self.tokenizer = BertTokenizer.from_pretrained(bert_model)
     
-    def preprocessor(self, tree, level='all', stage=None):
+    def preprocessor(self, tree, level='all'):
         if self.method == 'section':
             if not (os.path.exists("datasets/section_train_set.pkl") and os.path.exists("datasets/section_valid_set.pkl") and os.path.exists("datasets/section_test_set.pkl")):
                 train_data, test_data = self.train_test_split()
                 print("\nPreprocessing Data...")
-                for splitted_set in [train_data, test_data]:
-                    self.preprocessing_data(dataset=splitted_set, method=self.method, tree=tree, stage=stage)
+                for stage_idx, splitted_set in enumerate([train_data, test_data]):
+                    self.preprocessing_data(dataset=splitted_set, method=self.method, tree=tree, stage_idx=stage_idx)
                 print('[ Preprocessing Completed ]\n')
 
             print("\nLoading Data...")
@@ -91,7 +91,7 @@ class Preprocessor(object):
         
         return max_length
     
-    def preprocessing_data(self, dataset, method, tree, level=None, stage=None): 
+    def preprocessing_data(self, dataset, method, tree, level=None, stage_idx=None): 
         level_on_nodes_indexed, idx_on_section, section_on_idx = tree.generate_hierarchy()
         max_length = self.get_max_length(dataset=dataset)
     
@@ -118,7 +118,7 @@ class Preprocessor(object):
                 target.append(level_target)
 
             elif method == 'section':
-                if stage == 'fit':
+                if stage_idx == 0:
                     nodes = row[-1].lower().split(" > ")
                     
                     section = {}
@@ -137,7 +137,7 @@ class Preprocessor(object):
 
                     target.append(section)
 
-                elif stage == 'test':
+                elif stage_idx == 1:
                     last_node = row[-1].split(" > ")[-1].lower()
                     last_section_target = section_on_idx[last_node]
                     target.append(last_section_target)                    
@@ -167,7 +167,7 @@ class Preprocessor(object):
 
                 wrap_size = len(data_wrapped)
 
-                if stage == 'fit':
+                if stage_idx == 0:
                     train_size = int(wrap_size * train_ratio)
                     valid_size = wrap_size - train_size
                     
@@ -177,10 +177,10 @@ class Preprocessor(object):
                     train_dataset = pd.concat([train_dataset, train_set])
                     valid_dataset = pd.concat([valid_dataset, valid_set])
                 
-                elif stage == 'test':
+                elif stage_idx == 1:
                     test_dataset = pd.concat([test_dataset, data_wrapped])
 
-            if stage == 'fit':
+            if stage_idx == 0:
                 train_dataset = self.hierarchy_section_sorting_dataset(train_dataset)
 
                 with open('datasets/section_train_set.pkl', 'wb') as train_preprocessed :
@@ -190,7 +190,7 @@ class Preprocessor(object):
                 with open('datasets/section_valid_set.pkl', 'wb') as valid_preprocessed :
                     pickle.dump(valid_set, valid_preprocessed)
             
-            elif stage == 'test':
+            elif stage_idx == 1:
                 with open('datasets/section_test_set.pkl', 'wb') as test_preprocessed :
                     pickle.dump(test_dataset, test_preprocessed)
                     
@@ -322,7 +322,7 @@ class Preprocessor(object):
             return test_dataloader
         
     def section_dataloader(self, stage, tree, section):
-        section_train_set, section_valid_set, section_test_set = self.preprocessor(tree=tree, stage=stage)
+        section_train_set, section_valid_set, section_test_set = self.preprocessor(tree=tree)
 
         if stage == 'fit':
             return section_train_set[section], section_valid_set[section]
