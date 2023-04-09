@@ -181,11 +181,11 @@ class Preprocessor(object):
             if stage_idx == 0:
                 train_dataset = self.hierarchy_section_sorting_dataset(train_dataset)
                 with open('datasets/section_train_set.pkl', 'wb') as train_preprocessed :
-                    pickle.dump(train_set, train_preprocessed)
+                    pickle.dump(train_dataset, train_preprocessed)
                     
                 valid_dataset = self.hierarchy_section_sorting_dataset(valid_dataset)
                 with open('datasets/section_valid_set.pkl', 'wb') as valid_preprocessed :
-                    pickle.dump(valid_set, valid_preprocessed)
+                    pickle.dump(valid_dataset, valid_preprocessed)
             
             elif stage_idx == 1:
                 test_dataset = TensorDataset(torch.tensor(input_ids), torch.tensor(target))
@@ -219,7 +219,7 @@ class Preprocessor(object):
         return text
     
     def hierarchy_section_sorting_dataset(self, dataset):
-        keys = [c for c in dataset if c.startswith('level_')]
+        keys = [column for column in dataset if column.startswith('level_')]
         dataset = pd.melt(dataset, id_vars=['input_ids', "section"], value_vars=keys, value_name='section_idx').drop("variable", 1)
         dataset["section_idx"] = dataset["section_idx"].astype("int")
         
