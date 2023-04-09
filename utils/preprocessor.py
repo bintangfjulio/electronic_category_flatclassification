@@ -66,8 +66,7 @@ class Preprocessor(object):
         return train_set, valid_set, test_set
         
     def train_test_split(self):
-        data = self.dataset
-        data = data.sample(frac=1)
+        data = self.dataset.sample(frac=1)
 
         data_len = data.shape[0]
         train_len : int = int(data_len * 0.8)
