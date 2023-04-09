@@ -139,8 +139,10 @@ class Preprocessor(object):
 
                 elif stage_idx == 1:
                     last_node = row[-1].split(" > ")[-1].lower()
-                    last_section_target = section_on_idx[last_node]
-                    target.append(last_section_target)                    
+                    section_idx = section_on_idx[last_node]
+                    nodes_on_section = idx_on_section[section_idx]
+                    section_target = nodes_on_section.index(last_node)
+                    target.append(section_target)         
                     
                 input_ids.append(token['input_ids'])
                 
