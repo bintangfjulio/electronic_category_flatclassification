@@ -33,7 +33,7 @@ class Preprocessor(object):
     def preprocessor(self, tree, level='all', stage=None):
         if self.method == 'section':
             if not (os.path.exists("datasets/section_train_set.pkl") and os.path.exists("datasets/section_valid_set.pkl") and os.path.exists("datasets/section_test_set.pkl")):
-                train_data, test_data = self.split_dataset()
+                train_data, test_data = self.train_test_split()
                 print("\nPreprocessing Data...")
                 for splitted_set in [train_data, test_data]:
                     self.preprocessing_data(dataset=splitted_set, method=self.method, tree=tree, stage=stage)
@@ -64,7 +64,7 @@ class Preprocessor(object):
 
         return train_set, valid_set, test_set
         
-    def split_dataset(self):
+    def train_test_split(self):
         data = self.dataset
         data = data.sample(frac=1)
 
