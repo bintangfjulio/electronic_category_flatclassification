@@ -146,29 +146,29 @@ class Preprocessor(object):
                 input_ids.append(token['input_ids'])
                 
         if method == 'section':
-            section_dataframe = pd.DataFrame({
-                'input_ids': input_ids,
-                'section': target,
-                'level_0': section_level_0,
-                'level_1': section_level_1,
-                'level_2': section_level_2
-            })
+            if stage_idx == 0:
+                section_dataframe = pd.DataFrame({
+                    'input_ids': input_ids,
+                    'section': target,
+                    'level_0': section_level_0,
+                    'level_1': section_level_1,
+                    'level_2': section_level_2
+                })
 
-            section_dataframe['last_section'] = section_dataframe['section'].apply(lambda row: self.get_last_section_idx(row))
-            section_dataframe = section_dataframe.sort_values(by=['last_section'])
+                section_dataframe['last_section'] = section_dataframe['section'].apply(lambda row: self.get_last_section_idx(row))
+                section_dataframe = section_dataframe.sort_values(by=['last_section'])
 
-            section_keys = list(section_dataframe['last_section'].unique())
+                section_keys = list(section_dataframe['last_section'].unique())
 
-            train_ratio = 0.9
-            train_dataset, valid_dataset, test_dataset = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+                train_ratio = 0.9
+                train_dataset, valid_dataset = pd.DataFrame(), pd.DataFrame()
 
-            for key in section_keys:
-                data_wrapped = section_dataframe.where(section_dataframe['last_section'] == key).dropna(how='all')
-                data_wrapped = data_wrapped.sample(frac=1).reset_index(drop=True)
+                for key in section_keys:
+                    data_wrapped = section_dataframe.where(section_dataframe['last_section'] == key).dropna(how='all')
+                    data_wrapped = data_wrapped.sample(frac=1).reset_index(drop=True)
 
-                wrap_size = len(data_wrapped)
+                    wrap_size = len(data_wrapped)
 
-                if stage_idx == 0:
                     train_size = int(wrap_size * train_ratio)
                     valid_size = wrap_size - train_size
                     
@@ -177,9 +177,6 @@ class Preprocessor(object):
                     
                     train_dataset = pd.concat([train_dataset, train_set])
                     valid_dataset = pd.concat([valid_dataset, valid_set])
-                
-                elif stage_idx == 1:
-                    test_dataset = pd.concat([test_dataset, data_wrapped])
 
             if stage_idx == 0:
                 train_dataset = self.hierarchy_section_sorting_dataset(train_dataset)
@@ -188,10 +185,13 @@ class Preprocessor(object):
                     pickle.dump(train_set, train_preprocessed)
                     
                 valid_dataset = self.hierarchy_section_sorting_dataset(valid_dataset)
+
                 with open('datasets/section_valid_set.pkl', 'wb') as valid_preprocessed :
                     pickle.dump(valid_set, valid_preprocessed)
             
             elif stage_idx == 1:
+                test_dataset = TensorDataset(torch.tensor(input_ids), torch.tensor(target))
+
                 with open('datasets/section_test_set.pkl', 'wb') as test_preprocessed :
                     pickle.dump(test_dataset, test_preprocessed)
                     
@@ -222,7 +222,7 @@ class Preprocessor(object):
         return text
     
     def hierarchy_section_sorting_dataset(self, dataset):
-        keys = [child for child in dataset if child.startswith('level_')]
+        keys = [category for category in dataset if category.startswith('level_')]
         dataset = pd.melt(dataset, id_vars=['input_ids', "section"], value_vars=keys, value_name='section_idx').drop("variable", 1)
         dataset["section_idx"] = dataset["section_idx"].astype("int")
         
