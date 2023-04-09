@@ -11,7 +11,7 @@ from tqdm import tqdm
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from transformers import BertTokenizer
-from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
+from torch.utils.data import TensorDataset, DataLoader
 
 class Preprocessor(object):
     def __init__(self, method, dataset, batch_size, bert_model):
