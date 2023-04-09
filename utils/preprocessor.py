@@ -30,15 +30,13 @@ class Preprocessor(object):
         self.stemmer = StemmerFactory().create_stemmer()
         self.tokenizer = BertTokenizer.from_pretrained(bert_model)
     
-    def preprocessor(self, tree, level='all'):
+    def preprocessor(self, tree, level='all', stage=None):
         if self.method == 'section':
             if not (os.path.exists("datasets/section_train_set.pkl") and os.path.exists("datasets/section_valid_set.pkl") and os.path.exists("datasets/section_test_set.pkl")):
                 train_data, test_data = self.split_dataset()
                 print("\nPreprocessing Data...")
-                
-                for sequence_idx, splitted_set in enumerate([train_data, test_data]):
-                    self.preprocessing_data(dataset=splitted_set, method=self.method, tree=tree, sequence_idx=sequence_idx)
-                    
+                for splitted_set in [train_data, test_data]:
+                    self.preprocessing_data(dataset=splitted_set, method=self.method, tree=tree, stage=stage)
                 print('[ Preprocessing Completed ]\n')
 
             print("\nLoading Data...")
@@ -50,7 +48,6 @@ class Preprocessor(object):
 
             with open('datasets/section_test_set.pkl', 'rb') as test_preprocessed:
                 test_set = pickle.load(test_preprocessed)
-                
             print('[ Loading Completed ]\n')
 
         else:
@@ -94,7 +91,7 @@ class Preprocessor(object):
         
         return max_length
     
-    def preprocessing_data(self, dataset, method, tree, level=None, sequence_idx=None): 
+    def preprocessing_data(self, dataset, method, tree, level=None, stage=None): 
         level_on_nodes_indexed, idx_on_section, section_on_idx = tree.generate_hierarchy()
         max_length = self.get_max_length(dataset=dataset)
     
@@ -121,25 +118,31 @@ class Preprocessor(object):
                 target.append(level_target)
 
             elif method == 'section':
-                nodes = row[-1].lower().split(" > ")
-                
-                section = {}
-                section_idx_list = []
+                if stage == 'fit':
+                    nodes = row[-1].lower().split(" > ")
+                    
+                    section = {}
+                    section_idx_list = []
 
-                for node in nodes:
-                    section_idx = section_on_idx[node]
-                    nodes_on_section = idx_on_section[section_idx]
-                    section_target = nodes_on_section.index(node)
-                    section[section_idx] = section_target
-                    section_idx_list.append(section_idx)
+                    for node in nodes:
+                        section_idx = section_on_idx[node]
+                        nodes_on_section = idx_on_section[section_idx]
+                        section_target = nodes_on_section.index(node)
+                        section[section_idx] = section_target
+                        section_idx_list.append(section_idx)
 
+                    section_level_0.append(section_idx_list[0])
+                    section_level_1.append(section_idx_list[1])
+                    section_level_2.append(section_idx_list[2])
+
+                    target.append(section)
+
+                elif stage == 'test':
+                    last_node = row[-1].split(" > ")[-1].lower()
+                    last_section_target = section_on_idx[last_node]
+                    target.append(last_section_target)                    
+                    
                 input_ids.append(token['input_ids'])
-
-                section_level_0.append(section_idx_list[0])
-                section_level_1.append(section_idx_list[1])
-                section_level_2.append(section_idx_list[2])
-
-                target.append(section)
                 
         if method == 'section':
             section_dataframe = pd.DataFrame({
@@ -164,7 +167,7 @@ class Preprocessor(object):
 
                 wrap_size = len(data_wrapped)
 
-                if sequence_idx == 0:
+                if stage == 'fit':
                     train_size = int(wrap_size * train_ratio)
                     valid_size = wrap_size - train_size
                     
@@ -174,21 +177,22 @@ class Preprocessor(object):
                     train_dataset = pd.concat([train_dataset, train_set])
                     valid_dataset = pd.concat([valid_dataset, valid_set])
                 
-                else:
+                elif stage == 'test':
                     test_dataset = pd.concat([test_dataset, data_wrapped])
 
-            if sequence_idx == 0:
-                train_set = self.hierarchy_section_sorting_dataset(train_dataset)
+            if stage == 'fit':
+                train_dataset = self.hierarchy_section_sorting_dataset(train_dataset)
 
                 with open('datasets/section_train_set.pkl', 'wb') as train_preprocessed :
                     pickle.dump(train_set, train_preprocessed)
                     
-                valid_set = self.hierarchy_section_sorting_dataset(valid_dataset)
+                valid_dataset = self.hierarchy_section_sorting_dataset(valid_dataset)
                 with open('datasets/section_valid_set.pkl', 'wb') as valid_preprocessed :
                     pickle.dump(valid_set, valid_preprocessed)
             
-            else:
-                pass
+            elif stage == 'test':
+                with open('datasets/section_test_set.pkl', 'wb') as test_preprocessed :
+                    pickle.dump(test_dataset, test_preprocessed)
                     
         else:
             train_set, valid_set, test_set = self.dataset_splitting(input_ids, target)
@@ -318,10 +322,14 @@ class Preprocessor(object):
             return test_dataloader
         
     def section_dataloader(self, stage, tree, section):
-        section_train_set, section_valid_set, section_test_set = self.preprocessor(tree=tree)
+        section_train_set, section_valid_set, section_test_set = self.preprocessor(tree=tree, stage=stage)
 
         if stage == 'fit':
             return section_train_set[section], section_valid_set[section]
 
         elif stage == 'test':
-            pass
+            test_dataloader = DataLoader(dataset=section_test_set,
+                                        batch_size=self.batch_size,
+                                        num_workers=multiprocessing.cpu_count())
+
+            return test_dataloader
