@@ -29,6 +29,7 @@ class Preprocessor(object):
         self.stop_words = StopWordRemoverFactory().get_stop_words()
         self.stemmer = StemmerFactory().create_stemmer()
         self.tokenizer = BertTokenizer.from_pretrained(bert_model)
+        self.max_length = self.get_max_length()
     
     def preprocessor(self, tree, level='all'):
         if self.method == 'section':
@@ -79,10 +80,10 @@ class Preprocessor(object):
 
         return train_data, test_data
     
-    def get_max_length(self, dataset, extra_length=5):
+    def get_max_length(self, extra_length=5):
         sentences_token = []
         
-        for row in dataset.values.tolist():
+        for row in self.dataset.values.tolist():
             row = str(row[0]).split()
             sentences_token.append(row)
 
@@ -93,7 +94,6 @@ class Preprocessor(object):
     
     def preprocessing_data(self, dataset, method, tree, level=None, stage_idx=None): 
         level_on_nodes_indexed, idx_on_section, section_on_idx = tree.generate_hierarchy()
-        max_length = self.get_max_length(dataset=dataset)
     
         input_ids, target = [], []
         preprocessing_progress = tqdm(dataset.values.tolist())
@@ -102,7 +102,7 @@ class Preprocessor(object):
 
         for row in preprocessing_progress:
             text = self.text_cleaning(str(row[0]))
-            token = self.tokenizer(text=text, max_length=max_length, padding="max_length", truncation=True)  
+            token = self.tokenizer(text=text, max_length=self.max_length, padding="max_length", truncation=True)  
 
             if method == 'flat':
                 last_node = row[-1].split(" > ")[-1].lower()
