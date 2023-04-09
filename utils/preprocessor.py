@@ -58,9 +58,14 @@ class Preprocessor(object):
                 print('[ Preprocessing Completed ]\n')
             
             print("\nLoading Data...")
-            train_set = pickle.load(f"datasets/{self.method}_level_{str(level)}_train_set.pkl")
-            valid_set = pickle.load(f"datasets/{self.method}_level_{str(level)}_valid_set.pkl")
-            test_set = pickle.load(f"datasets/{self.method}_level_{str(level)}_test_set.pkl")
+            with open(f"datasets/{self.method}_level_{str(level)}_train_set.pkl", 'rb') as train_preprocessed:
+                train_set = pickle.load(train_preprocessed)
+                
+            with open(f"datasets/{self.method}_level_{str(level)}_valid_set.pkl", 'rb') as valid_preprocessed:
+                valid_set = pickle.load(valid_preprocessed)
+                
+            with open(f"datasets/{self.method}_level_{str(level)}_test_set.pkl", 'rb') as test_preprocessed:
+                test_set = pickle.load(test_preprocessed)
             print('[ Loading Completed ]\n')
 
         return train_set, valid_set, test_set
@@ -179,18 +184,18 @@ class Preprocessor(object):
                     valid_dataset = pd.concat([valid_dataset, valid_set])
 
             if stage_idx == 0:
-                train_dataset = self.hierarchy_section_sorting_dataset(train_dataset)
+                train_set = self.hierarchy_section_sorting_dataset(train_dataset)
                 with open('datasets/section_train_set.pkl', 'wb') as train_preprocessed :
-                    pickle.dump(train_dataset, train_preprocessed)
+                    pickle.dump(train_set, train_preprocessed)
                     
-                valid_dataset = self.hierarchy_section_sorting_dataset(valid_dataset)
+                valid_set = self.hierarchy_section_sorting_dataset(valid_dataset)
                 with open('datasets/section_valid_set.pkl', 'wb') as valid_preprocessed :
-                    pickle.dump(valid_dataset, valid_preprocessed)
+                    pickle.dump(valid_set, valid_preprocessed)
             
             elif stage_idx == 1:
-                test_dataset = TensorDataset(torch.tensor(input_ids), torch.tensor(target))
+                test_set = TensorDataset(torch.tensor(input_ids), torch.tensor(target))
                 with open('datasets/section_test_set.pkl', 'wb') as test_preprocessed :
-                    pickle.dump(test_dataset, test_preprocessed)
+                    pickle.dump(test_set, test_preprocessed)
                     
         else:
             train_set, valid_set, test_set = self.dataset_splitting(input_ids, target)
