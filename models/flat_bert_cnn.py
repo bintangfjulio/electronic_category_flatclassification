@@ -316,7 +316,7 @@ class Flat_Trainer(object):
         self.model.zero_grad()
         
         print("Test Stage...")
-        print("Loading Checkpoint on Epoch", checkpoint['epoch'])
+        print("Loading Checkpoint on Epoch", self.checkpoint['epoch'])
         print("=" * 50)
 
         test_loss, test_accuracy, test_f1_micro, test_f1_macro, test_f1_weighted = self.test_step()
