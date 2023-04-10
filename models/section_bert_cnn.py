@@ -205,7 +205,8 @@ class Section_Trainer(object):
                     continue
         
                 self.train_set, self.valid_set = datamodule.section_dataloader(stage='fit', tree=self.tree, section=section)
-                self.initialize_model(num_classes=len(idx_on_section[section])) 
+                self.initialize_model(num_classes=len(idx_on_section[section]))
+                self.model.zero_grad()
 
                 print("Training Stage...")
                 print("Epoch ", epoch)
