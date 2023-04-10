@@ -55,7 +55,6 @@ class Flat_Trainer(object):
         self.lr = lr
         self.dropout = dropout
         self.criterion = nn.CrossEntropyLoss()
-        self.log_softmax = nn.LogSoftmax(dim=1)
         self.patience = patience
         self.checkpoint = None
 
@@ -101,7 +100,7 @@ class Flat_Trainer(object):
 
             preds = self.model(input_ids=input_ids)
             loss = self.criterion(preds, target)
-            preds = self.log_softmax(preds)
+            preds = torch.argmax(preds, dim=1)
 
             accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
 
@@ -150,7 +149,7 @@ class Flat_Trainer(object):
 
                 preds = self.model(input_ids=input_ids)
                 loss = self.criterion(preds, target)
-                preds = self.log_softmax(preds)
+                preds = torch.argmax(preds, dim=1)
 
                 accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
 
@@ -196,7 +195,7 @@ class Flat_Trainer(object):
 
                 preds = self.model(input_ids=input_ids)
                 loss = self.criterion(preds, target)
-                preds = self.log_softmax(preds)
+                preds = torch.argmax(preds, dim=1)
 
                 accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
 
