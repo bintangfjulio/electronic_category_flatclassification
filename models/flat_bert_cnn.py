@@ -57,6 +57,7 @@ class Flat_Trainer(object):
         self.criterion = nn.CrossEntropyLoss()
         self.log_softmax = nn.LogSoftmax(dim=1)
         self.patience = patience
+        self.checkpoint = None
 
     def scoring_result(self, preds, target):
         accuracy = self.accuracy_metric(preds, target)
@@ -68,8 +69,11 @@ class Flat_Trainer(object):
 
     def initialize_model(self, num_classes):
         self.model = BERT_CNN(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout)
+        
+        if self.checkpoint is not None:
+            self.model.load_state_dict(self.checkpoint['model_state'])
+            
         self.model.to(self.device)
-
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=0.5, total_iters=5) 
 
@@ -298,17 +302,19 @@ class Flat_Trainer(object):
         valid_result.to_csv('logs/flat_result/valid_result.csv', index=False, encoding='utf-8')
 
     def test(self, datamodule):
+        level_on_nodes_indexed, _, _ = self.tree.generate_hierarchy()
+        
         test_accuracy_epoch = []
         test_loss_epoch = []
         test_f1_micro_epoch = []
         test_f1_macro_epoch = []
         test_f1_weighted_epoch = []
 
-        checkpoint = torch.load('checkpoints/flat_result/flat_temp.pt')
-        self.model.load_state_dict(checkpoint['model_state'])
-        self.model.to(self.device)
-
         self.test_set = datamodule.flat_dataloader(stage='test', tree=self.tree)
+        self.checkpoint = torch.load('checkpoints/flat_result/flat_temp.pt')
+        self.initialize_model(num_classes=len(level_on_nodes_indexed[len(level_on_nodes_indexed) - 1]))
+        self.model.zero_grad()
+        
         print("Test Stage...")
         print("Loading Checkpoint on Epoch", checkpoint['epoch'])
         print("=" * 50)
