@@ -63,7 +63,6 @@ class Level_Trainer(object):
         self.lr = lr
         self.dropout = dropout
         self.criterion = nn.CrossEntropyLoss()
-        self.log_softmax = nn.LogSoftmax(dim=1)
         self.patience = patience
         self.level_weight = None
         self.output_weight = None
@@ -120,7 +119,7 @@ class Level_Trainer(object):
             preds = self.output_layer(logits) 
 
             loss = self.criterion(preds, target)
-            preds = self.log_softmax(preds)
+            preds = torch.argmax(preds, dim=1)
 
             accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
 
@@ -172,7 +171,7 @@ class Level_Trainer(object):
                 preds = self.output_layer(logits) 
 
                 loss = self.criterion(preds, target)
-                preds = self.log_softmax(preds)
+                preds = torch.argmax(preds, dim=1)
 
                 accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
 
@@ -221,7 +220,7 @@ class Level_Trainer(object):
                 preds = self.output_layer(logits) 
 
                 loss = self.criterion(preds, target)
-                preds = self.log_softmax(preds)
+                preds = torch.argmax(preds, dim=1)
 
                 accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
 
