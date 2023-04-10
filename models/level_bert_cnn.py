@@ -140,6 +140,7 @@ class Level_Trainer(object):
             self.optimizer.step()
             self.scheduler.step()
             self.model.zero_grad()
+            self.output_layer.zero_grad()
 
         print("On Epoch Train Loss: ", round(mean(train_step_loss), 2))
         print("On Epoch Train Accuracy: ", round(mean(train_step_accuracy), 2))
@@ -188,6 +189,7 @@ class Level_Trainer(object):
                                             " | Validation Step F1 Macro : " + str(round(f1_macro.item(), 2)))
             
                 self.model.zero_grad()
+                self.output_layer.zero_grad()
 
         print("On Epoch Validation Loss: ", round(mean(val_step_loss), 2))
         print("On Epoch Validation Accuracy: ", round(mean(val_step_accuracy), 2))
@@ -282,6 +284,7 @@ class Level_Trainer(object):
 
                 self.initialize_model(num_classes=len(level_on_nodes_indexed[level]))
                 self.model.zero_grad()
+                self.output_layer.zero_grad()
 
                 self.train_set, self.valid_set = datamodule.level_dataloader(stage='fit', level=level, tree=self.tree)
 
@@ -370,11 +373,12 @@ class Level_Trainer(object):
         test_level = []
 
         for level in range(num_level):
+            self.test_set = datamodule.level_dataloader(stage='test', level=level, tree=self.tree)
             self.level_weight  = torch.load(f'checkpoints/level_result/best_parameters/level_{str(level)}_temp.pt')
             self.output_weight = torch.load(f'checkpoints/level_result/best_parameters/level_{str(level)}_output.pt')
-
             self.initialize_model(num_classes=len(level_on_nodes_indexed[level])) 
-            self.test_set = datamodule.level_dataloader(stage='test', level=level, tree=self.tree)
+            self.model.zero_grad()
+            self.output_layer.zero_grad()
 
             print("Test Stage...")
             print("Loading Checkpoint on Epoch", self.level_weight['epoch'])
