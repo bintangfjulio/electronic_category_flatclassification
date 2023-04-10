@@ -324,7 +324,7 @@ class Preprocessor(object):
 
             return test_dataloader
         
-    def section_dataloader(self, stage, tree, section):
+    def section_dataloader(self, stage, tree, section=None):
         section_train_set, section_valid_set, section_test_set = self.preprocessor(tree=tree)
 
         if stage == 'fit':
