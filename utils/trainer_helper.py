@@ -1,9 +1,9 @@
 import pandas as pd
 
 from utils.tree_helper import Tree_Helper
-from models.flat_bert_cnn import Flat_Trainer
-from models.level_bert_cnn import Level_Trainer
-from models.section_bert_cnn import Section_Trainer
+from utils.flat_trainer import Flat_Trainer
+from utils.level_trainer import Level_Trainer
+from utils.section_trainer import Section_Trainer
 
 class Trainer_Helper(object):
     def __init__(self, method, dataset, bert_model, seed, max_epochs, lr, dropout, patience):
