@@ -7,11 +7,12 @@ class Tree_Helper(object):
         self.level_on_nodes_indexed = None
         self.idx_on_section = None 
         self.section_on_idx = None
+        self.section_parent_child = None
 
         if not os.path.exists(tree_file):
             self.create_tree_file()
 
-        self.arrange_hierarchy()
+        self.generate_hierarchy()
             
     def create_tree_file(self):
         hierarchy_path = []
@@ -27,7 +28,7 @@ class Tree_Helper(object):
             for path in hierarchy_path:
                 tree_file.write(path + "\n")
 
-    def arrange_hierarchy(self):
+    def generate_hierarchy(self):
         section_parent_child = {}
         level_on_nodes = {}
 
@@ -77,6 +78,7 @@ class Tree_Helper(object):
         self.level_on_nodes_indexed = level_on_nodes_indexed
         self.idx_on_section = idx_on_section
         self.section_on_idx = section_on_idx
+        self.section_parent_child = section_parent_child
     
-    def generate_hierarchy(self):
-        return self.level_on_nodes_indexed, self.idx_on_section, self.section_on_idx
+    def get_hierarchy(self):
+        return self.level_on_nodes_indexed, self.idx_on_section, self.section_on_idx, self.section_parent_child

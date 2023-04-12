@@ -97,7 +97,7 @@ class Preprocessor(object):
         return max_length
     
     def preprocessing_data(self, dataset, method, tree, level=None, stage_idx=None): 
-        level_on_nodes_indexed, idx_on_section, section_on_idx = tree.generate_hierarchy()
+        level_on_nodes_indexed, idx_on_section, section_on_idx, _ = tree.get_hierarchy()
     
         input_ids, target = [], []
         preprocessing_progress = tqdm(dataset.values.tolist())
@@ -332,7 +332,7 @@ class Preprocessor(object):
 
         elif stage == 'test':
             test_dataloader = DataLoader(dataset=section_test_set,
-                                        batch_size=self.batch_size,
+                                        batch_size=1,
                                         num_workers=multiprocessing.cpu_count())
 
             return test_dataloader

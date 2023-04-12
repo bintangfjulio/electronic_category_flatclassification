@@ -1,6 +1,7 @@
 import os
 import torch
 import random
+import sys
 import pandas as pd
 import torch.nn as nn
 import numpy as np
@@ -33,6 +34,7 @@ class Section_Trainer(object):
         self.dropout = dropout
         self.criterion = nn.CrossEntropyLoss()
         self.patience = patience
+        self.checkpoint = None
 
     def scoring_result(self, preds, target):
         accuracy = self.accuracy_metric(preds, target)
@@ -44,8 +46,11 @@ class Section_Trainer(object):
 
     def initialize_model(self, num_classes):
         self.model = BERT_CNN(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout)
-        self.model.to(self.device)
 
+        if self.checkpoint is not None:
+            self.model.load_state_dict(self.checkpoint['model_state'])
+
+        self.model.to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=0.5, total_iters=5) 
 
@@ -148,8 +153,20 @@ class Section_Trainer(object):
 
         return mean(val_step_loss), mean(val_step_accuracy), mean(val_step_f1_micro), mean(val_step_f1_macro), mean(val_step_f1_weighted)
 
+    def test_step(self, section_depth, input_ids, target):
+        preds = self.model(input_ids=input_ids)
+        preds = torch.argmax(preds, dim=1)
+
+        if section_depth < 2:
+            return preds
+        
+        loss = self.criterion(preds, target)
+        accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
+
+        return loss.item(), accuracy.item(), f1_micro.item(), f1_macro.item(), f1_weighted.item()
+
     def fit(self, datamodule):
-        _, idx_on_section, _ = self.tree.generate_hierarchy()
+        _, idx_on_section, _, _ = self.tree.get_hierarchy()
         section_idx = list(idx_on_section.keys())
 
         train_accuracy_epoch = []
@@ -241,10 +258,66 @@ class Section_Trainer(object):
         valid_result.to_csv('logs/section_result/valid_result.csv', index=False, encoding='utf-8')
 
     def test(self, datamodule):
-        pass
+        _, idx_on_section, section_on_idx, section_parent_child = self.tree.get_hierarchy()
+
+        test_accuracy_epoch = []
+        test_loss_epoch = []
+        test_f1_micro_epoch = []
+        test_f1_macro_epoch = []
+        test_f1_weighted_epoch = []
+
+        self.test_set = datamodule.section_dataloader(stage='test', tree=self.tree)
+
+        with torch.no_grad():
+            test_progress = tqdm(self.test_set)
+
+            for test_batch in test_progress:
+                section = 0
+                input_ids, target = test_batch
+
+                input_ids = input_ids.to(self.device)
+                target = target.to(self.device)
+
+                for section_depth in range(3):
+                    self.checkpoint = torch.load(f'checkpoints/section_result/section_{section}_temp.pt')
+                    self.initialize_model(num_classes=len(idx_on_section[section]))
+                    self.model.zero_grad()
+                    
+                    print("Test Stage...")
+                    print("Loading Checkpoint on Epoch", self.checkpoint['epoch'], "for Section", section)
+                    print("=" * 50)
+
+                    self.model.eval()
+
+                    if section_depth == 2:
+                        loss, accuracy, f1_micro, f1_macro, f1_weighted = self.test_step(section_depth=section_depth, input_ids=input_ids, target=target)
+
+                        test_progress.set_description("Test Step Loss : " + str(round(loss, 2)) + 
+                                            " | Test Step Accuracy : " + str(round(accuracy, 2)) + 
+                                            " | Test Step F1 Micro : " + str(round(f1_micro, 2)) +
+                                            " | Test Step F1 Weighted : " + str(round(f1_weighted, 2)) +
+                                            " | Test Step F1 Macro : " + str(round(f1_macro, 2)))
+
+                        test_loss_epoch.append(loss)
+                        test_accuracy_epoch.append(accuracy)
+                        test_f1_micro_epoch.append(f1_micro)
+                        test_f1_macro_epoch.append(f1_macro)
+                        test_f1_weighted_epoch.append(f1_weighted)
+
+                    else:
+                        preds = self.test_step(section_depth=section_depth, input_ids=input_ids, target=target)
+                        category = idx_on_section[section][preds]
+                        pivot = list(section_parent_child[category])[0]
+                        section = section_on_idx[pivot]
+
+        if not os.path.exists('logs/section_result'):
+            os.makedirs('logs/section_result')
+                        
+        test_result = pd.DataFrame({'accuracy': mean(test_accuracy_epoch), 'loss': mean(test_loss_epoch), 'f1_micro': mean(test_f1_micro_epoch), 'f1_macro': mean(test_f1_macro_epoch), 'f1_weighted': mean(test_f1_weighted_epoch)})
+        test_result.to_csv('logs/section_result/test_result.csv', index=False, encoding='utf-8')
 
     def create_graph(self):
-        _, idx_on_section, _ = self.tree.generate_hierarchy()
+        _, idx_on_section, _, _ = self.tree.get_hierarchy()
         section_idx = list(idx_on_section.keys())
 
         for section in section_idx:

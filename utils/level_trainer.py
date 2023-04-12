@@ -215,7 +215,7 @@ class Level_Trainer(object):
         return mean(test_step_loss), mean(test_step_accuracy), mean(test_step_f1_micro), mean(test_step_f1_macro), mean(test_step_f1_weighted)
     
     def fit(self, datamodule):
-        level_on_nodes_indexed, _, _ = self.tree.generate_hierarchy()
+        level_on_nodes_indexed, _, _, _ = self.tree.get_hierarchy()
         num_level = len(level_on_nodes_indexed)
 
         train_accuracy_epoch = []
@@ -331,7 +331,7 @@ class Level_Trainer(object):
         valid_result.to_csv('logs/level_result/valid_result.csv', index=False, encoding='utf-8')
 
     def test(self, datamodule):
-        level_on_nodes_indexed, _, _ = self.tree.generate_hierarchy() 
+        level_on_nodes_indexed, _, _, _ = self.tree.get_hierarchy()
         num_level = len(level_on_nodes_indexed)
 
         test_accuracy_epoch = []
@@ -370,7 +370,7 @@ class Level_Trainer(object):
         test_result.to_csv('logs/level_result/test_result.csv', index=False, encoding='utf-8')
 
     def create_graph(self):
-        level_on_nodes_indexed, _, _ = self.tree.generate_hierarchy()
+        level_on_nodes_indexed, _, _, _ = self.tree.get_hierarchy()
         num_level = len(level_on_nodes_indexed)
 
         for level in range(num_level):
