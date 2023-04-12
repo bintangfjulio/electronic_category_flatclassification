@@ -3,4 +3,4 @@ Repository for all scraping utils and dataset results from web scraping of https
 
 But, for the easiest way dataset access you can import it from this repository dataset releases
 ## Run It
-python main.py --method=... --dataset=...</br></br>There are methods for run main.py:</br>method: flat, level, section
+# python main.py --method=... --dataset=...</br></br>There are method options for run main.py:</br>method: flat, level, section
