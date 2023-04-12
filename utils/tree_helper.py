@@ -78,7 +78,7 @@ class Tree_Helper(object):
         self.level_on_nodes_indexed = level_on_nodes_indexed
         self.idx_on_section = idx_on_section
         self.section_on_idx = section_on_idx
-        self.section_parent_child = section_parent_child
+        self.section_parent_child = set_root_section
     
     def get_hierarchy(self):
         return self.level_on_nodes_indexed, self.idx_on_section, self.section_on_idx, self.section_parent_child

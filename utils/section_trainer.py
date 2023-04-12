@@ -152,12 +152,12 @@ class Section_Trainer(object):
 
         return mean(val_step_loss), mean(val_step_accuracy), mean(val_step_f1_micro), mean(val_step_f1_macro), mean(val_step_f1_weighted)
 
-    def test_step(self, section_level, input_ids, target):
+    def test_step(self, level, num_level, input_ids, target):
         preds = self.model(input_ids=input_ids)
         loss = self.criterion(preds, target)
         preds = torch.argmax(preds, dim=1)
 
-        if section_level < 2:
+        if level < (num_level - 1):
             return preds
         
         accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
@@ -257,7 +257,7 @@ class Section_Trainer(object):
         valid_result.to_csv('logs/section_result/valid_result.csv', index=False, encoding='utf-8')
 
     def test(self, datamodule):
-        _, idx_on_section, section_on_idx, section_parent_child = self.tree.get_hierarchy()
+        level_on_nodes_indexed, idx_on_section, section_on_idx, section_parent_child = self.tree.get_hierarchy()
 
         test_accuracy_epoch = []
         test_loss_epoch = []
@@ -268,14 +268,18 @@ class Section_Trainer(object):
         self.test_set = datamodule.section_dataloader(stage='test', tree=self.tree)
         test_progress = tqdm(self.test_set)
 
+        num_level = len(level_on_nodes_indexed)
+
         for test_batch in test_progress:
             input_ids, target = test_batch
+            
             input_ids = input_ids.to(self.device)
             target = target.to(self.device)
 
-            section = 0
+            pivot = list(section_parent_child['root'])[0]
+            section = section_on_idx[pivot]
 
-            for section_level in range(3):
+            for level in range(num_level):
                 self.checkpoint = torch.load(f'checkpoints/section_result/section_{section}_temp.pt')
                 self.initialize_model(num_classes=len(idx_on_section[section]))
                 self.model.zero_grad()
@@ -287,14 +291,14 @@ class Section_Trainer(object):
                 self.model.eval()
 
                 with torch.no_grad():
-                    if section_level < 2:
-                        preds = self.test_step(section_level=section_level, input_ids=input_ids, target=target)
+                    if level < (num_level - 1):
+                        preds = self.test_step(level=level, num_level=num_level, input_ids=input_ids, target=target)
                         category = idx_on_section[section][preds]
                         pivot = list(section_parent_child[category])[0]
                         section = section_on_idx[pivot]
 
                     else:
-                        loss, accuracy, f1_micro, f1_macro, f1_weighted = self.test_step(section_level=section_level, input_ids=input_ids, target=target)
+                        loss, accuracy, f1_micro, f1_macro, f1_weighted = self.test_step(level=level, num_level=num_level, input_ids=input_ids, target=target)
 
                         test_progress.set_description("Test Step Loss : " + str(round(loss, 2)) + 
                                             " | Test Step Accuracy : " + str(round(accuracy, 2)) + 
