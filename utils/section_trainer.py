@@ -155,12 +155,13 @@ class Section_Trainer(object):
 
     def test_step(self, section_depth, input_ids, target):
         preds = self.model(input_ids=input_ids)
+        loss = self.criterion(preds, target)
+        
         preds = torch.argmax(preds, dim=1)
 
         if section_depth < 2:
             return preds
         
-        loss = self.criterion(preds, target)
         accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
 
         return loss.item(), accuracy.item(), f1_micro.item(), f1_macro.item(), f1_weighted.item()
