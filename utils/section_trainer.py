@@ -1,7 +1,6 @@
 import os
 import torch
 import random
-import sys
 import pandas as pd
 import torch.nn as nn
 import numpy as np
@@ -153,12 +152,12 @@ class Section_Trainer(object):
 
         return mean(val_step_loss), mean(val_step_accuracy), mean(val_step_f1_micro), mean(val_step_f1_macro), mean(val_step_f1_weighted)
 
-    def test_step(self, section_depth, input_ids, target):
+    def test_step(self, section_level, input_ids, target):
         preds = self.model(input_ids=input_ids)
         loss = self.criterion(preds, target)
         preds = torch.argmax(preds, dim=1)
 
-        if section_depth < 2:
+        if section_level < 2:
             return preds
         
         accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
@@ -267,30 +266,35 @@ class Section_Trainer(object):
         test_f1_weighted_epoch = []
 
         self.test_set = datamodule.section_dataloader(stage='test', tree=self.tree)
+        test_progress = tqdm(self.test_set)
 
-        with torch.no_grad():
-            test_progress = tqdm(self.test_set)
+        for test_batch in test_progress:
+            input_ids, target = test_batch
+            input_ids = input_ids.to(self.device)
+            target = target.to(self.device)
 
-            for test_batch in test_progress:
-                section = 0
-                input_ids, target = test_batch
+            section = 0
 
-                input_ids = input_ids.to(self.device)
-                target = target.to(self.device)
+            for section_level in range(3):
+                self.checkpoint = torch.load(f'checkpoints/section_result/section_{section}_temp.pt')
+                self.initialize_model(num_classes=len(idx_on_section[section]))
+                self.model.zero_grad()
+                
+                print("Test Stage...")
+                print("Loading Checkpoint on Epoch", self.checkpoint['epoch'], "for Section", section)
+                print("=" * 50)
 
-                for section_depth in range(3):
-                    self.checkpoint = torch.load(f'checkpoints/section_result/section_{section}_temp.pt')
-                    self.initialize_model(num_classes=len(idx_on_section[section]))
-                    self.model.zero_grad()
-                    
-                    print("Test Stage...")
-                    print("Loading Checkpoint on Epoch", self.checkpoint['epoch'], "for Section", section)
-                    print("=" * 50)
+                self.model.eval()
 
-                    self.model.eval()
+                with torch.no_grad():
+                    if section_level < 2:
+                        preds = self.test_step(section_level=section_level, input_ids=input_ids, target=target)
+                        category = idx_on_section[section][preds]
+                        pivot = list(section_parent_child[category])[0]
+                        section = section_on_idx[pivot]
 
-                    if section_depth == 2:
-                        loss, accuracy, f1_micro, f1_macro, f1_weighted = self.test_step(section_depth=section_depth, input_ids=input_ids, target=target)
+                    else:
+                        loss, accuracy, f1_micro, f1_macro, f1_weighted = self.test_step(section_level=section_level, input_ids=input_ids, target=target)
 
                         test_progress.set_description("Test Step Loss : " + str(round(loss, 2)) + 
                                             " | Test Step Accuracy : " + str(round(accuracy, 2)) + 
@@ -303,12 +307,6 @@ class Section_Trainer(object):
                         test_f1_micro_epoch.append(f1_micro)
                         test_f1_macro_epoch.append(f1_macro)
                         test_f1_weighted_epoch.append(f1_weighted)
-
-                    else:
-                        preds = self.test_step(section_depth=section_depth, input_ids=input_ids, target=target)
-                        category = idx_on_section[section][preds]
-                        pivot = list(section_parent_child[category])[0]
-                        section = section_on_idx[pivot]
 
         if not os.path.exists('logs/section_result'):
             os.makedirs('logs/section_result')
