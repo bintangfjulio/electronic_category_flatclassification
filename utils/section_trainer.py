@@ -156,7 +156,6 @@ class Section_Trainer(object):
     def test_step(self, section_depth, input_ids, target):
         preds = self.model(input_ids=input_ids)
         loss = self.criterion(preds, target)
-        
         preds = torch.argmax(preds, dim=1)
 
         if section_depth < 2:
