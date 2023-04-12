@@ -269,6 +269,8 @@ class Section_Trainer(object):
         test_progress = tqdm(self.test_set)
 
         num_level = len(level_on_nodes_indexed)
+        
+        print("Test Stage...")
 
         for test_batch in test_progress:
             input_ids, target = test_batch
@@ -284,7 +286,6 @@ class Section_Trainer(object):
                 self.initialize_model(num_classes=len(idx_on_section[section]))
                 self.model.zero_grad()
                 
-                print("Test Stage...")
                 print("Loading Checkpoint on Epoch", self.checkpoint['epoch'], "for Section", section)
                 print("=" * 50)
 
