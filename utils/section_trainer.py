@@ -316,7 +316,7 @@ class Section_Trainer(object):
         if not os.path.exists('logs/section_result'):
             os.makedirs('logs/section_result')
                         
-        test_result = pd.DataFrame({'accuracy': mean(test_accuracy_epoch), 'loss': mean(test_loss_epoch), 'f1_micro': mean(test_f1_micro_epoch), 'f1_macro': mean(test_f1_macro_epoch), 'f1_weighted': mean(test_f1_weighted_epoch)})
+        test_result = pd.DataFrame({'accuracy': mean(test_accuracy_epoch), 'loss': mean(test_loss_epoch), 'f1_micro': mean(test_f1_micro_epoch), 'f1_macro': mean(test_f1_macro_epoch), 'f1_weighted': mean(test_f1_weighted_epoch)}, index=[0])
         test_result.to_csv('logs/section_result/test_result.csv', index=False, encoding='utf-8')
 
     def create_graph(self):
