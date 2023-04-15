@@ -152,6 +152,18 @@ class Section_Trainer(object):
 
         return mean(val_step_loss), mean(val_step_accuracy), mean(val_step_f1_micro), mean(val_step_f1_macro), mean(val_step_f1_weighted)
 
+    def test_step(self, level, num_level, input_ids, target):
+        preds = self.model(input_ids=input_ids)
+        loss = self.criterion(preds, target)
+        preds = torch.argmax(preds, dim=1)
+
+        if level < (num_level - 1):
+            return preds
+        
+        accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds, target=target)
+
+        return loss.item(), accuracy.item(), f1_micro.item(), f1_macro.item(), f1_weighted.item()
+
     def fit(self, datamodule):
         _, idx_on_section, _, _ = self.tree.get_hierarchy()
         section_idx = list(idx_on_section.keys())
@@ -247,9 +259,11 @@ class Section_Trainer(object):
     def test(self, datamodule):
         level_on_nodes_indexed, idx_on_section, section_on_idx, section_parent_child = self.tree.get_hierarchy()
 
-        preds_collected = []
-        target_collected = []
-        logits_collected = []
+        test_accuracy_epoch = []
+        test_loss_epoch = []
+        test_f1_micro_epoch = []
+        test_f1_macro_epoch = []
+        test_f1_weighted_epoch = []
 
         self.test_set = datamodule.section_dataloader(stage='test', tree=self.tree)
         test_progress = tqdm(self.test_set)
@@ -278,26 +292,31 @@ class Section_Trainer(object):
                 self.model.eval()
 
                 with torch.no_grad():
-                    logits = self.model(input_ids=input_ids)
-                    preds = torch.argmax(logits, dim=1)
-
                     if level < (num_level - 1):
+                        preds = self.test_step(level=level, num_level=num_level, input_ids=input_ids, target=target)
                         category = idx_on_section[section][preds]
                         pivot = list(section_parent_child[category])[0]
                         section = section_on_idx[pivot]
-                    
-                    else:
-                        preds_collected.append(preds)
-                        logits_collected.append(logits)
-                        target_collected.append(target)
 
-        accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds_collected, target=target_collected)
-        loss = self.criterion(logits_collected, target_collected)
+                    else:
+                        loss, accuracy, f1_micro, f1_macro, f1_weighted = self.test_step(level=level, num_level=num_level, input_ids=input_ids, target=target)
+
+                        test_progress.set_description("Test Step Loss : " + str(round(loss, 2)) + 
+                                            " | Test Step Accuracy : " + str(round(accuracy, 2)) + 
+                                            " | Test Step F1 Micro : " + str(round(f1_micro, 2)) +
+                                            " | Test Step F1 Weighted : " + str(round(f1_weighted, 2)) +
+                                            " | Test Step F1 Macro : " + str(round(f1_macro, 2)))
+
+                        test_loss_epoch.append(loss)
+                        test_accuracy_epoch.append(accuracy)
+                        test_f1_micro_epoch.append(f1_micro)
+                        test_f1_macro_epoch.append(f1_macro)
+                        test_f1_weighted_epoch.append(f1_weighted)
 
         if not os.path.exists('logs/section_result'):
             os.makedirs('logs/section_result')
                         
-        test_result = pd.DataFrame({'accuracy': accuracy, 'loss': loss, 'f1_micro': f1_micro, 'f1_macro': f1_macro, 'f1_weighted': f1_weighted}, index=[0])
+        test_result = pd.DataFrame({'accuracy': mean(test_accuracy_epoch), 'loss': mean(test_loss_epoch), 'f1_micro': mean(test_f1_micro_epoch), 'f1_macro': mean(test_f1_macro_epoch), 'f1_weighted': mean(test_f1_weighted_epoch)}, index=[0])
         test_result.to_csv('logs/section_result/test_result.csv', index=False, encoding='utf-8')
 
     def create_graph(self):
