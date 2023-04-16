@@ -34,15 +34,20 @@ def Inference(checkpoint, max_length, num_classes):
         padding="max_length", 
         truncation=True)
     
+    input_ids = token['input_ids'].to('cuda')
+    
     model = BERT_CNN(num_classes=num_classes, bert_model='indolem/indobert-base-uncased', dropout=0.1)
     model.load_state_dict(checkpoint['model_state'])
+    model.to('cuda')
+    model.zero_grad()
+    
     model.eval()
 
-    preds = model(token['input_ids'])
-    print('Logits:', preds)
-    preds = torch.argmax(preds, dim=1)
+    with torch.no_grad():
+        logits = model(input_ids)        
+        print('Logits:', logits)
 
-    return preds
+    return torch.argmax(logits, dim=1)
 
 if __name__ == '__main__':
     # get max length
@@ -72,11 +77,11 @@ if __name__ == '__main__':
         
         if level < (num_level - 1):
             category = idx_on_section[section][preds]
+            print('Current predicted:', category)
             pivot = list(section_parent_child[category])[0]
             section = section_on_idx[pivot]
-            print('Predicted:', category)
             print('Next section:', section)
 
         else:
             category = idx_on_section[section][preds]
-            print('Final Predict', category)
+            print('Final predicted', category)
