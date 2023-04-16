@@ -247,9 +247,9 @@ class Section_Trainer(object):
     def test(self, datamodule):
         level_on_nodes_indexed, idx_on_section, section_on_idx, section_parent_child = self.tree.get_hierarchy()
 
-        preds_collected = []
-        target_collected = []
-        logits_collected = []
+        preds_collected = torch.tensor([], device=self.device)
+        target_collected = torch.tensor([], dtype=torch.long, device=self.device)
+        logits_collected = torch.tensor([], device=self.device)
 
         self.test_set = datamodule.section_dataloader(stage='test', tree=self.tree)
         test_progress = tqdm(self.test_set)
@@ -287,9 +287,9 @@ class Section_Trainer(object):
                         section = section_on_idx[pivot]
                     
                     else:
-                        preds_collected.append(preds)
-                        logits_collected.append(logits)
-                        target_collected.append(target)
+                        torch.cat((preds_collected, preds), 0)
+                        torch.cat((target_collected, target), 0)
+                        torch.cat((logits_collected, logits), 0)
 
         accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds_collected, target=target_collected)
         loss = self.criterion(logits_collected, target_collected)
@@ -297,7 +297,7 @@ class Section_Trainer(object):
         if not os.path.exists('logs/section_result'):
             os.makedirs('logs/section_result')
                         
-        test_result = pd.DataFrame({'accuracy': accuracy, 'loss': loss, 'f1_micro': f1_micro, 'f1_macro': f1_macro, 'f1_weighted': f1_weighted}, index=[0])
+        test_result = pd.DataFrame({'accuracy': accuracy.item(), 'loss': loss.item(), 'f1_micro': f1_micro.item(), 'f1_macro': f1_macro.item(), 'f1_weighted': f1_weighted.item()}, index=[0])
         test_result.to_csv('logs/section_result/test_result.csv', index=False, encoding='utf-8')
 
     def create_graph(self):
