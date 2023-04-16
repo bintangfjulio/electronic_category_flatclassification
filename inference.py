@@ -9,12 +9,11 @@ from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFacto
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from transformers import BertTokenizer
 
-def Inference(checkpoint, max_length, num_classes):
+def Inference(text, checkpoint, max_length, num_classes):
     stop_words = StopWordRemoverFactory().get_stop_words()
     stemmer = StemmerFactory().create_stemmer()
     tokenizer = BertTokenizer.from_pretrained('indolem/indobert-base-uncased')
 
-    text = input('Insert text to predict:')
     text = text.lower()
     text = re.sub(r"[^A-Za-z0-9(),!?\'\-`]", " ", text)
     text = re.sub('\n', ' ', text)
@@ -50,6 +49,8 @@ def Inference(checkpoint, max_length, num_classes):
     return torch.argmax(logits, dim=1)
 
 if __name__ == '__main__':
+    text = input('Insert text to predict:')
+        
     # get max length
     dataset = pd.read_csv(f'datasets/small_product_tokopedia.csv')
     sentences_token = []
@@ -73,7 +74,7 @@ if __name__ == '__main__':
     # inference hierarchically
     num_level = len(level_on_nodes_indexed)
     for level in range(num_level):
-        preds = Inference(checkpoint=torch.load(f"checkpoints/section_result/section_{section}_temp.pt"), max_length=max_length, num_classes=len(idx_on_section[section]))
+        preds = Inference(text=text, checkpoint=torch.load(f"checkpoints/section_result/section_{section}_temp.pt"), max_length=max_length, num_classes=len(idx_on_section[section]))
         
         if level < (num_level - 1):
             category = idx_on_section[section][preds]
