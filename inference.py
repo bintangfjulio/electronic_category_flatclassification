@@ -69,7 +69,7 @@ if __name__ == '__main__':
     # setup root section
     pivot = list(section_parent_child['root'])[0]
     section = section_on_idx[pivot]
-    print('Section', section, 'Inferencing...')
+    print('Inferencing...')
 
     # inference hierarchically
     num_level = len(level_on_nodes_indexed)
