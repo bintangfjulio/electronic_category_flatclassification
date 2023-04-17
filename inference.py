@@ -49,7 +49,7 @@ def Inference(text, checkpoint, max_length, num_classes):
     return torch.argmax(logits, dim=1)
 
 if __name__ == '__main__':
-    text = input('Insert text to predict:')
+    text = input('Insert text to predict: ')
         
     # get max length
     dataset = pd.read_csv(f'datasets/small_product_tokopedia.csv')
