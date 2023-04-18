@@ -61,8 +61,9 @@ if __name__ == '__main__':
     max_length = max(token_length) + 5
 
     # get hierarchy
-    tree = Tree_Helper(tree_file=f'datasets/small_hierarchy.tree')
+    tree = Tree_Helper(tree_file='datasets/small_hierarchy.tree')
     level_on_nodes_indexed, idx_on_section, section_on_idx, section_parent_child = tree.get_hierarchy()
+    
     print('Idx for Each Section:', idx_on_section)
     print('Grouped Child with Parent:', section_parent_child)
     

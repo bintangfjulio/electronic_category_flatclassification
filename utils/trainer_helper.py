@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 
 from utils.tree_helper import Tree_Helper
@@ -7,7 +8,10 @@ from utils.section_trainer import Section_Trainer
 
 class Trainer_Helper(object):
     def __init__(self, method, dataset, bert_model, seed, max_epochs, lr, dropout, patience):
-        tree = Tree_Helper(tree_file=f'datasets/{dataset}_hierarchy.tree', dataset=pd.read_csv(f'datasets/{dataset}_product_tokopedia.csv'))
+        tree = Tree_Helper(tree_file=f'datasets/{dataset}_hierarchy.tree')
+
+        if not os.path.exists(f'datasets/{dataset}_hierarchy.tree'):
+            tree.create_tree_file(dataset=pd.read_csv(f'datasets/{dataset}_product_tokopedia.csv'))
 
         if method == 'flat':
             self.trainer = Flat_Trainer(tree=tree,

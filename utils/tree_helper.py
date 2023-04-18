@@ -1,25 +1,20 @@
-import os
+import sys
 
 class Tree_Helper(object):
-    def __init__(self, tree_file, dataset=None):
+    def __init__(self, tree_file):
         self.tree_file = tree_file
-        self.dataset = dataset
         self.level_on_nodes_indexed = None
         self.idx_on_section = None 
         self.section_on_idx = None
         self.section_parent_child = None
-
-        if not os.path.exists(tree_file):
-            self.create_tree_file()
-
         self.generate_hierarchy()
             
-    def create_tree_file(self):
+    def create_tree_file(self, dataset):
         hierarchy_path = []
 
-        for column_idx, column in enumerate(self.dataset.columns.tolist()):
+        for column_idx, column in enumerate(dataset.columns.tolist()):
             if column_idx > 0:
-                for row in self.dataset[column].drop_duplicates().values.tolist():
+                for row in dataset[column].drop_duplicates().values.tolist():
                     hierarchy_path.append(row)
 
         hierarchy_path.sort()
@@ -74,6 +69,11 @@ class Tree_Helper(object):
                 node_with_idx[node] = idx
             
             level_on_nodes_indexed[level] = node_with_idx
+
+        section_idx = list(idx_on_section.keys())
+        
+        for idx in section_idx:
+            idx_on_section[idx].sort()
 
         self.level_on_nodes_indexed = level_on_nodes_indexed
         self.idx_on_section = idx_on_section

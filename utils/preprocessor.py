@@ -101,8 +101,11 @@ class Preprocessor(object):
     
         input_ids, target = [], []
         preprocessing_progress = tqdm(dataset.values.tolist())
+        num_level = len(level_on_nodes_indexed)
 
-        section_level_0, section_level_1, section_level_2 = [], [], []
+        section_each_level = {}
+        for level in range(num_level):
+            section_each_level[level] = list()
 
         for row in preprocessing_progress:
             text = self.text_cleaning(str(row[0]))
@@ -116,8 +119,7 @@ class Preprocessor(object):
             
             elif method == 'level':
                 node_on_level = row[-1].split(" > ")[level].lower()
-                member_on_level = level_on_nodes_indexed[level]
-                level_target = member_on_level[node_on_level]
+                level_target = level_on_nodes_indexed[level][node_on_level]
                 input_ids.append(token['input_ids'])
                 target.append(level_target)
 
@@ -130,14 +132,12 @@ class Preprocessor(object):
 
                     for node in nodes:
                         section_idx = section_on_idx[node]
-                        nodes_on_section = idx_on_section[section_idx]
-                        section_target = nodes_on_section.index(node)
+                        section_target = idx_on_section[section_idx].index(node)
                         section[section_idx] = section_target
                         section_idx_list.append(section_idx)
-
-                    section_level_0.append(section_idx_list[0])
-                    section_level_1.append(section_idx_list[1])
-                    section_level_2.append(section_idx_list[2])
+                    
+                    for level in range(num_level):
+                        section_each_level[level].append(section_idx_list[level])
 
                     target.append(section)
 
@@ -152,14 +152,12 @@ class Preprocessor(object):
                 
         if method == 'section':
             if stage_idx == 0:
-                section_dataframe = pd.DataFrame({
-                    'input_ids': input_ids,
-                    'section': target,
-                    'level_0': section_level_0,
-                    'level_1': section_level_1,
-                    'level_2': section_level_2
-                })
+                prepare_dataframe = {'input_ids': input_ids, 'section': target}
+                
+                for level in range(num_level):
+                    prepare_dataframe.update({f'level_{level}': section_each_level[level]})
 
+                section_dataframe = pd.DataFrame(prepare_dataframe)
                 section_dataframe['last_section'] = section_dataframe['section'].apply(lambda row: self.get_last_section_idx(row))
                 section_dataframe = section_dataframe.sort_values(by=['last_section'])
 
