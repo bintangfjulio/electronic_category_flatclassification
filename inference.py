@@ -62,6 +62,7 @@ if __name__ == '__main__':
 
     # get hierarchy
     tree = Tree_Helper(tree_file='datasets/small_hierarchy.tree')
+    tree.generate_hierarchy()
     level_on_nodes_indexed, idx_on_section, section_on_idx, section_parent_child = tree.get_hierarchy()
     
     print('Idx for Each Section:', idx_on_section)
