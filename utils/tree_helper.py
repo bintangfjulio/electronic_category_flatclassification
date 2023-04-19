@@ -7,7 +7,6 @@ class Tree_Helper(object):
         self.idx_on_section = None 
         self.section_on_idx = None
         self.section_parent_child = None
-        self.generate_hierarchy()
             
     def create_tree_file(self, dataset):
         hierarchy_path = []
