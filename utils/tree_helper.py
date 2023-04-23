@@ -1,5 +1,3 @@
-import sys
-
 class Tree_Helper(object):
     def __init__(self, tree_file):
         self.tree_file = tree_file
@@ -71,8 +69,8 @@ class Tree_Helper(object):
 
         section_idx = list(idx_on_section.keys())
         
-        for idx in section_idx:
-            idx_on_section[idx].sort()
+        for section in section_idx:
+            idx_on_section[section].sort()
 
         self.level_on_nodes_indexed = level_on_nodes_indexed
         self.idx_on_section = idx_on_section
