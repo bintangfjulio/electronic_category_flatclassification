@@ -12,7 +12,7 @@ from statistics import mean
 from tqdm import tqdm
 from torchmetrics.classification import MulticlassAccuracy
 from torchmetrics.classification import MulticlassF1Score
-from models.level_bert_cnn import Level_BERT_CNN
+from models.bert_cnn import BERT_CNN
 
 class Level_Trainer(object):
     def __init__(self, tree, bert_model, seed, max_epochs, lr, dropout, patience):
@@ -46,7 +46,7 @@ class Level_Trainer(object):
         return accuracy, f1_micro, f1_macro, f1_weighted
     
     def initialize_model(self, num_classes):
-        self.model = Level_BERT_CNN(bert_model=self.bert_model, dropout=self.dropout)
+        self.model = BERT_CNN(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout)
 
         if self.level_weight is not None:
             self.model.load_state_dict(self.level_weight['model_state'])
@@ -55,7 +55,7 @@ class Level_Trainer(object):
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=0.5, total_iters=5) 
 
-        self.output_layer = nn.Linear(self.model.get_window_length() * self.model.get_out_channels_length(), num_classes)
+        self.output_layer = nn.Linear(self.model.get_window_length * self.model.get_out_channels_length, num_classes)
 
         if self.output_weight is not None:
             self.output_layer.load_state_dict(self.output_weight)
@@ -84,7 +84,7 @@ class Level_Trainer(object):
             input_ids = input_ids.to(self.device)
             target = target.to(self.device)
 
-            logits = self.model(input_ids=input_ids)
+            logits = self.model(input_ids=input_ids, level=True)
 
             preds = self.output_layer(logits) 
 
@@ -137,7 +137,7 @@ class Level_Trainer(object):
                 input_ids = input_ids.to(self.device)
                 target = target.to(self.device)
 
-                logits = self.model(input_ids=input_ids)
+                logits = self.model(input_ids=input_ids, level=True)
                 preds = self.output_layer(logits) 
 
                 loss = self.criterion(preds, target)
@@ -186,7 +186,7 @@ class Level_Trainer(object):
                 input_ids = input_ids.to(self.device)
                 target = target.to(self.device)
 
-                logits = self.model(input_ids=input_ids)
+                logits = self.model(input_ids=input_ids, level=True)
                 preds = self.output_layer(logits) 
 
                 loss = self.criterion(preds, target)

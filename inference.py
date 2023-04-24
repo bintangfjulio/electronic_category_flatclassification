@@ -1,6 +1,7 @@
 import re
 import string
 import torch
+import argparse
 import pandas as pd
 
 from models.bert_cnn import BERT_CNN
@@ -9,10 +10,11 @@ from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFacto
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from transformers import BertTokenizer
 
-def Inference(text, checkpoint, max_length, num_classes):
+def Inference(text, bert_model, dropout_prob, checkpoint, max_length, num_classes):
     stop_words = StopWordRemoverFactory().get_stop_words()
     stemmer = StemmerFactory().create_stemmer()
-    tokenizer = BertTokenizer.from_pretrained('indolem/indobert-base-uncased')
+    tokenizer = BertTokenizer.from_pretrained(bert_model)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     text = text.lower()
     text = re.sub(r"[^A-Za-z0-9(),!?\'\-`]", " ", text)
@@ -33,26 +35,36 @@ def Inference(text, checkpoint, max_length, num_classes):
         padding="max_length", 
         truncation=True)
     
-    input_ids = token['input_ids'].to('cuda')
+    input_ids = token['input_ids'].to(device)
     
-    model = BERT_CNN(num_classes=num_classes, bert_model='indolem/indobert-base-uncased', dropout=0.1)
+    model = BERT_CNN(num_classes=num_classes, bert_model=bert_model, dropout=dropout_prob)
     model.load_state_dict(checkpoint['model_state'])
-    model.to('cuda')
+    model.to(device)
     model.zero_grad()
-    
+
     model.eval()
 
     with torch.no_grad():
         logits = model(input_ids)        
         print('Logits:', logits)
+        preds = torch.argmax(logits, dim=1)
 
-    return torch.argmax(logits, dim=1)
+    return preds
+
+def parsing_argument():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", type=str, default='small')
+    parser.add_argument("--bert_model", type=str, default='indolem/indobert-base-uncased')
+    parser.add_argument("--dropout", type=float, default=0.1)
+    config = vars(parser.parse_args())
+
+    return config['dataset'], config['bert_model'], config['dropout']
 
 if __name__ == '__main__':
+    type_set, bert_model, dropout_prob = parsing_argument()
     text = input('Insert text to predict: ')
         
-    # get max length
-    dataset = pd.read_csv(f'datasets/small_product_tokopedia.csv')
+    dataset = pd.read_csv(f'datasets/{type_set}_product_tokopedia.csv')
     sentences_token = []
     for row in dataset.values.tolist():
         row = str(row[0]).split()
@@ -60,23 +72,20 @@ if __name__ == '__main__':
     token_length = [len(token) for token in sentences_token]
     max_length = max(token_length) + 5
 
-    # get hierarchy
-    tree = Tree_Helper(tree_file='datasets/small_hierarchy.tree')
+    tree = Tree_Helper(tree_file=f'datasets/{type_set}_hierarchy.tree')
     tree.generate_hierarchy()
     level_on_nodes_indexed, idx_on_section, section_on_idx, section_parent_child = tree.get_hierarchy()
     
-    print('Idx for Each Section:', idx_on_section)
-    print('Grouped Child with Parent:', section_parent_child)
+    print('Index for each section:', idx_on_section)
+    print('Grouped child with parent:', section_parent_child)
     
-    # setup root section
     pivot = list(section_parent_child['root'])[0]
     section = section_on_idx[pivot]
-    print('Inferencing...')
+    print('Inferencing categories...')
 
-    # inference hierarchically
     num_level = len(level_on_nodes_indexed)
     for level in range(num_level):
-        preds = Inference(text=text, checkpoint=torch.load(f"checkpoints/section_result/section_{section}_temp.pt"), max_length=max_length, num_classes=len(idx_on_section[section]))
+        preds = Inference(text=text, bert_model=bert_model, dropout_prob=dropout_prob, checkpoint=torch.load(f"checkpoints/section_result/section_{section}_temp.pt"), max_length=max_length, num_classes=len(idx_on_section[section]))
         
         if level < (num_level - 1):
             category = idx_on_section[section][preds]

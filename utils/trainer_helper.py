@@ -12,7 +12,7 @@ class Trainer_Helper(object):
 
         if not os.path.exists(f'datasets/{dataset}_hierarchy.tree'):
             tree.create_tree_file(dataset=pd.read_csv(f'datasets/{dataset}_product_tokopedia.csv'))
-         
+    
         tree.generate_hierarchy()
 
         if method == 'flat':
