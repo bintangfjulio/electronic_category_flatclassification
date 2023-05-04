@@ -6,7 +6,7 @@ from utils.trainer_helper import Trainer_Helper
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--method', choices=['flat', 'level', 'section'], required=True, help='Fine-tune method choices')
-    parser.add_argument('--dataset', choices=['small', 'large'], required=True, help='Dataset types to fine-tune')
+    parser.add_argument("--dataset", type=str, default='large')
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--bert_model", type=str, default='indolem/indobert-base-uncased')
     parser.add_argument("--seed", type=int, default=42)

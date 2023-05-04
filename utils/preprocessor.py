@@ -9,7 +9,6 @@ import pandas as pd
 
 from tqdm import tqdm
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
-from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from transformers import BertTokenizer
 from torch.utils.data import TensorDataset, DataLoader
 
@@ -27,7 +26,6 @@ class Preprocessor(object):
         self.batch_size = batch_size
         self.method = method
         self.stop_words = StopWordRemoverFactory().get_stop_words()
-        self.stemmer = StemmerFactory().create_stemmer()
         self.tokenizer = BertTokenizer.from_pretrained(bert_model)
         self.max_length = self.get_max_length()
     
@@ -217,9 +215,8 @@ class Preprocessor(object):
         text = re.sub("'", '', text)
         text = re.sub(r'\d+', '', text)
         text = ' '.join([word for word in text.split() if word not in self.stop_words and len(word) > 1])
-        text = self.stemmer.stem(text.strip())
 
-        return text
+        return text.strip()
     
     def hierarchy_section_sorting_dataset(self, dataset):
         keys = [column for column in dataset if column.startswith('level_')]

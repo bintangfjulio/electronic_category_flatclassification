@@ -7,12 +7,10 @@ import pandas as pd
 from models.bert_cnn import BERT_CNN
 from utils.tree_helper import Tree_Helper
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
-from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from transformers import BertTokenizer
 
 def Inference(text, bert_model, dropout_prob, checkpoint, max_length, num_classes):
     stop_words = StopWordRemoverFactory().get_stop_words()
-    stemmer = StemmerFactory().create_stemmer()
     tokenizer = BertTokenizer.from_pretrained(bert_model)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -25,7 +23,7 @@ def Inference(text, bert_model, dropout_prob, checkpoint, max_length, num_classe
     text = re.sub("'", '', text)
     text = re.sub(r'\d+', '', text)
     text = ' '.join([word for word in text.split() if word not in stop_words and len(word) > 1])
-    text = stemmer.stem(text.strip())
+    text = text.strip()
 
     token = tokenizer.encode_plus(
         text=text,
@@ -53,7 +51,7 @@ def Inference(text, bert_model, dropout_prob, checkpoint, max_length, num_classe
 
 def parsing_argument():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, default='small')
+    parser.add_argument("--dataset", type=str, default='large')
     parser.add_argument("--bert_model", type=str, default='indolem/indobert-base-uncased')
     parser.add_argument("--dropout", type=float, default=0.1)
     config = vars(parser.parse_args())
@@ -77,7 +75,7 @@ if __name__ == '__main__':
     level_on_nodes_indexed, idx_on_section, section_on_idx, section_parent_child = tree.get_hierarchy()
     
     print('Index for each section:', idx_on_section)
-    print('Grouped child with parent:', section_parent_child)
+    print('Child of parent:', section_parent_child)
     
     pivot = list(section_parent_child['root'])[0]
     section = section_on_idx[pivot]
