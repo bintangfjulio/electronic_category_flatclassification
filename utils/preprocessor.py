@@ -95,11 +95,11 @@ class Preprocessor(object):
         return max_length
     
     def preprocessing_data(self, dataset, method, tree, level=None, stage_idx=None): 
-        level_on_nodes_indexed, idx_on_section, section_on_idx, _ = tree.get_hierarchy()
+        level_on_nodes, idx_on_section, section_on_idx, _ = tree.get_hierarchy()
     
         input_ids, target = [], []
         preprocessing_progress = tqdm(dataset.values.tolist())
-        num_level = len(level_on_nodes_indexed)
+        num_level = len(level_on_nodes)
 
         section_each_level = {}
         for level_section in range(num_level):
@@ -111,13 +111,13 @@ class Preprocessor(object):
 
             if method == 'flat':
                 last_node = row[-1].split(" > ")[-1].lower()
-                flat_target = level_on_nodes_indexed[len(level_on_nodes_indexed) - 1][last_node]
+                flat_target = level_on_nodes[len(level_on_nodes) - 1].index(last_node)
                 input_ids.append(token['input_ids'])
                 target.append(flat_target)
             
             elif method == 'level':
                 node_on_level = row[-1].split(" > ")[level].lower()
-                level_target = level_on_nodes_indexed[level][node_on_level]
+                level_target = level_on_nodes[level].index(node_on_level)
                 input_ids.append(token['input_ids'])
                 target.append(level_target)
 

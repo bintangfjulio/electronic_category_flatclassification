@@ -215,8 +215,8 @@ class Level_Trainer(object):
         return mean(test_step_loss), mean(test_step_accuracy), mean(test_step_f1_micro), mean(test_step_f1_macro), mean(test_step_f1_weighted)
     
     def fit(self, datamodule):
-        level_on_nodes_indexed, _, _, _ = self.tree.get_hierarchy()
-        num_level = len(level_on_nodes_indexed)
+        level_on_nodes, _, _, _ = self.tree.get_hierarchy()
+        num_level = len(level_on_nodes)
 
         train_accuracy_epoch = []
         train_loss_epoch = []
@@ -251,7 +251,7 @@ class Level_Trainer(object):
                 if level > 0:
                     self.level_weight = torch.load(f'checkpoints/level_result/level_{str(level - 1)}_temp.pt')
 
-                self.initialize_model(num_classes=len(level_on_nodes_indexed[level]))
+                self.initialize_model(num_classes=len(level_on_nodes[level]))
                 self.model.zero_grad()
                 self.output_layer.zero_grad()
 
@@ -331,8 +331,8 @@ class Level_Trainer(object):
         valid_result.to_csv('logs/level_result/valid_result.csv', index=False, encoding='utf-8')
 
     def test(self, datamodule):
-        level_on_nodes_indexed, _, _, _ = self.tree.get_hierarchy()
-        num_level = len(level_on_nodes_indexed)
+        level_on_nodes, _, _, _ = self.tree.get_hierarchy()
+        num_level = len(level_on_nodes)
 
         test_accuracy_epoch = []
         test_loss_epoch = []
@@ -345,7 +345,7 @@ class Level_Trainer(object):
             self.test_set = datamodule.level_dataloader(stage='test', level=level, tree=self.tree)
             self.level_weight  = torch.load(f'checkpoints/level_result/best_parameters/level_{str(level)}_temp.pt')
             self.output_weight = torch.load(f'checkpoints/level_result/best_parameters/level_{str(level)}_output.pt')
-            self.initialize_model(num_classes=len(level_on_nodes_indexed[level])) 
+            self.initialize_model(num_classes=len(level_on_nodes[level])) 
             self.model.zero_grad()
             self.output_layer.zero_grad()
 
@@ -370,8 +370,8 @@ class Level_Trainer(object):
         test_result.to_csv('logs/level_result/test_result.csv', index=False, encoding='utf-8')
 
     def create_graph(self):
-        level_on_nodes_indexed, _, _, _ = self.tree.get_hierarchy()
-        num_level = len(level_on_nodes_indexed)
+        level_on_nodes, _, _, _ = self.tree.get_hierarchy()
+        num_level = len(level_on_nodes)
 
         for level in range(num_level):
             pd.options.display.float_format = '{:,.2f}'.format        

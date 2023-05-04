@@ -245,7 +245,7 @@ class Section_Trainer(object):
         valid_result.to_csv('logs/section_result/valid_result.csv', index=False, encoding='utf-8')
 
     def test(self, datamodule):
-        level_on_nodes_indexed, idx_on_section, section_on_idx, section_parent_child = self.tree.get_hierarchy()
+        level_on_nodes, idx_on_section, section_on_idx, section_parent_child = self.tree.get_hierarchy()
 
         preds_steps = []
         target_steps = []
@@ -254,7 +254,7 @@ class Section_Trainer(object):
         self.test_set = datamodule.section_dataloader(stage='test', tree=self.tree)
         test_progress = tqdm(self.test_set)
 
-        num_level = len(level_on_nodes_indexed)
+        num_level = len(level_on_nodes)
         
         print("Test Stage...")
 

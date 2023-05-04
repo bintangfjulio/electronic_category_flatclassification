@@ -72,7 +72,7 @@ if __name__ == '__main__':
 
     tree = Tree_Helper(tree_file=f'datasets/{type_set}_hierarchy.tree')
     tree.generate_hierarchy()
-    level_on_nodes_indexed, idx_on_section, section_on_idx, section_parent_child = tree.get_hierarchy()
+    level_on_nodes, idx_on_section, section_on_idx, section_parent_child = tree.get_hierarchy()
     
     print('Index for each section:', idx_on_section)
     print('Child of parent:', section_parent_child)
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     section = section_on_idx[pivot]
     print('Inferencing categories...')
 
-    num_level = len(level_on_nodes_indexed)
+    num_level = len(level_on_nodes)
     for level in range(num_level):
         preds = Inference(text=text, bert_model=bert_model, dropout_prob=dropout_prob, checkpoint=torch.load(f"checkpoints/section_result/section_{section}_temp.pt"), max_length=max_length, num_classes=len(idx_on_section[section]))
         

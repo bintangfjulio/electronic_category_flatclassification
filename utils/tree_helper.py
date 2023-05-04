@@ -1,7 +1,7 @@
 class Tree_Helper(object):
     def __init__(self, tree_file):
         self.tree_file = tree_file
-        self.level_on_nodes_indexed = None
+        self.level_on_nodes = None
         self.idx_on_section = None 
         self.section_on_idx = None
         self.section_parent_child = None
@@ -57,25 +57,18 @@ class Tree_Helper(object):
             for node in node_members:
                 section_on_idx[node] = idx
 
-        level_on_nodes_indexed = {}
-
-        for level, node_members in level_on_nodes.items():
-            node_with_idx = {}
-
-            for idx, node in enumerate(node_members):
-                node_with_idx[node] = idx
-            
-            level_on_nodes_indexed[level] = node_with_idx
-
         section_idx = list(idx_on_section.keys())
         
         for section in section_idx:
             idx_on_section[section].sort()
 
-        self.level_on_nodes_indexed = level_on_nodes_indexed
+        for level in range(len(level_on_nodes)):
+            level_on_nodes[level].sort()
+
+        self.level_on_nodes= level_on_nodes
         self.idx_on_section = idx_on_section
         self.section_on_idx = section_on_idx
         self.section_parent_child = set_root_section
     
     def get_hierarchy(self):
-        return self.level_on_nodes_indexed, self.idx_on_section, self.section_on_idx, self.section_parent_child
+        return self.level_on_nodes, self.idx_on_section, self.section_on_idx, self.section_parent_child

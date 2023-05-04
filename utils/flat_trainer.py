@@ -197,7 +197,7 @@ class Flat_Trainer(object):
         return mean(test_step_loss), mean(test_step_accuracy), mean(test_step_f1_micro), mean(test_step_f1_macro), mean(test_step_f1_weighted)
     
     def fit(self, datamodule):
-        level_on_nodes_indexed, _, _, _ = self.tree.get_hierarchy()
+        level_on_nodes, _, _, _ = self.tree.get_hierarchy()
 
         train_accuracy_epoch = []
         train_loss_epoch = []
@@ -214,7 +214,7 @@ class Flat_Trainer(object):
         val_epoch = []
 
         self.train_set, self.valid_set = datamodule.flat_dataloader(stage='fit', tree=self.tree)
-        self.initialize_model(num_classes=len(level_on_nodes_indexed[len(level_on_nodes_indexed) - 1]))
+        self.initialize_model(num_classes=len(level_on_nodes[len(level_on_nodes) - 1]))
         self.model.zero_grad()
 
         best_loss = 9.99
@@ -278,7 +278,7 @@ class Flat_Trainer(object):
         valid_result.to_csv('logs/flat_result/valid_result.csv', index=False, encoding='utf-8')
 
     def test(self, datamodule):
-        level_on_nodes_indexed, _, _, _ = self.tree.get_hierarchy()
+        level_on_nodes, _, _, _ = self.tree.get_hierarchy()
         
         test_accuracy_epoch = []
         test_loss_epoch = []
@@ -288,7 +288,7 @@ class Flat_Trainer(object):
 
         self.test_set = datamodule.flat_dataloader(stage='test', tree=self.tree)
         self.checkpoint = torch.load('checkpoints/flat_result/flat_temp.pt')
-        self.initialize_model(num_classes=len(level_on_nodes_indexed[len(level_on_nodes_indexed) - 1]))
+        self.initialize_model(num_classes=len(level_on_nodes[len(level_on_nodes) - 1]))
         self.model.zero_grad()
         
         print("Test Stage...")
