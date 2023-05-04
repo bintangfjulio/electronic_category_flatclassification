@@ -102,8 +102,8 @@ class Preprocessor(object):
         num_level = len(level_on_nodes_indexed)
 
         section_each_level = {}
-        for level in range(num_level):
-            section_each_level[level] = list()
+        for level_section in range(num_level):
+            section_each_level[level_section] = list()
 
         for row in preprocessing_progress:
             text = self.text_cleaning(str(row[0]))
