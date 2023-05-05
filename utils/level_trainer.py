@@ -55,7 +55,7 @@ class Level_Trainer(object):
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=0.5, total_iters=5) 
 
-        self.output_layer = nn.Linear(self.model.get_window_length * self.model.get_out_channels_length, num_classes)
+        self.output_layer = nn.Linear(self.model.get_window_length() * self.model.get_out_channels_length(), num_classes)
 
         if self.output_weight is not None:
             self.output_layer.load_state_dict(self.output_weight)
