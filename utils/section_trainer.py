@@ -293,7 +293,7 @@ class Section_Trainer(object):
                         section = section_on_idx[pivot]
 
                         if len(idx_on_section[section]) <= 1:
-                            preds_steps.append(target.item())
+                            preds_steps.append(torch.tensor(0))
                             target_steps.append(target.item())
 
                             self.model = BERT_CNN(num_classes=len(idx_on_section[section]), bert_model=self.bert_model, dropout=self.dropout)
