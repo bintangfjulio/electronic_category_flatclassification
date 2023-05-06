@@ -291,6 +291,14 @@ class Section_Trainer(object):
                         category = idx_on_section[section][preds]
                         pivot = list(section_parent_child[category])[0]
                         section = section_on_idx[pivot]
+
+                        if len(idx_on_section[section]) <= 1:
+                            preds_steps.append(target.item())
+                            target_steps.append(target.item())
+
+                            self.model = BERT_CNN(num_classes=len(idx_on_section[section]), bert_model=self.bert_model, dropout=self.dropout)
+                            logits = self.model(input_ids=input_ids)
+                            loss_steps.append(self.criterion(logits, target).item())
                     
                     else:
                         preds_steps.append(preds.item())
