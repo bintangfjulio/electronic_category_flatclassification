@@ -83,6 +83,11 @@ if __name__ == '__main__':
 
     num_level = len(level_on_nodes)
     for level in range(num_level):
+        if len(idx_on_section[section]) <= 1:
+            print('Skip level', level, 'because there is only one class')
+            print('Final predicted', pivot)
+            continue
+
         preds = Inference(text=text, bert_model=bert_model, dropout_prob=dropout_prob, checkpoint=torch.load(f"checkpoints/section_result/section_{section}_temp.pt"), max_length=max_length, num_classes=len(idx_on_section[section]))
         
         if level < (num_level - 1):
