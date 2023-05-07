@@ -67,6 +67,7 @@ if __name__ == '__main__':
     for row in dataset.values.tolist():
         row = str(row[0]).split()
         sentences_token.append(row)
+        
     token_length = [len(token) for token in sentences_token]
     max_length = max(token_length) + 5
 
@@ -83,7 +84,7 @@ if __name__ == '__main__':
 
     num_level = len(level_on_nodes)
     for level in range(num_level):
-        if len(idx_on_section[section]) <= 1:
+        if len(idx_on_section[section]) == 1:
             print('Skip level', level, 'because there is only one class')
             print('Final predicted', pivot)
             continue
