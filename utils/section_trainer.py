@@ -184,7 +184,7 @@ class Section_Trainer(object):
                 if fail[section] == self.patience:
                     continue
 
-                elif len(idx_on_section[section]) <= 1:
+                elif len(idx_on_section[section]) == 1:
                     continue
         
                 self.train_set, self.valid_set = datamodule.section_dataloader(stage='fit', tree=self.tree, section=section)
@@ -271,7 +271,7 @@ class Section_Trainer(object):
             section = section_on_idx[pivot]
 
             for level in range(num_level):                
-                if len(idx_on_section[section]) <= 1:
+                if len(idx_on_section[section]) == 1:
                     continue
 
                 self.checkpoint = torch.load(f'checkpoints/section_result/section_{section}_temp.pt')
@@ -292,7 +292,7 @@ class Section_Trainer(object):
                         pivot = list(section_parent_child[category])[0]
                         section = section_on_idx[pivot]
 
-                        if len(idx_on_section[section]) <= 1:
+                        if len(idx_on_section[section]) == 1:
                             preds_steps.append(torch.tensor(0))
                             target_steps.append(target.item())
 
