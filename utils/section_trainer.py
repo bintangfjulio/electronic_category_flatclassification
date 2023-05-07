@@ -322,6 +322,9 @@ class Section_Trainer(object):
         section_idx = list(idx_on_section.keys())
 
         for section in section_idx:
+            if len(idx_on_section[section]) == 1:
+                continue
+
             pd.options.display.float_format = '{:,.2f}'.format        
             train_log = pd.read_csv('logs/section_result/train_result.csv')
             valid_log = pd.read_csv('logs/section_result/valid_result.csv')
