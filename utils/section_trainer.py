@@ -188,10 +188,10 @@ class Section_Trainer(object):
                     continue
         
                 self.train_set, self.valid_set = datamodule.section_dataloader(stage='fit', tree=self.tree, section=section)
-                
+
                 if epoch > 0:
                     self.checkpoint = torch.load(f'checkpoints/section_result/section_{section}_temp.pt')
-                
+
                 self.initialize_model(num_classes=len(idx_on_section[section]))
                 self.model.zero_grad()
 
@@ -223,6 +223,19 @@ class Section_Trainer(object):
                 val_epoch.append(epoch)
                 val_section.append(section)
 
+                if not os.path.exists('logs/section_result'):
+                    os.makedirs('logs/section_result')
+
+                if os.path.exists('logs/section_result/train_result.csv' or 'logs/section_result/valid_result.csv'):
+                    os.remove('logs/section_result/train_result.csv')
+                    os.remove('logs/section_result/valid_result.csv')
+
+                train_result = pd.DataFrame({'epoch': train_epoch, 'section': train_section, 'accuracy': train_accuracy_epoch, 'loss': train_loss_epoch, 'f1_micro': train_f1_micro_epoch, 'f1_macro': train_f1_macro_epoch, 'f1_weighted': train_f1_weighted_epoch})
+                valid_result = pd.DataFrame({'epoch': val_epoch, 'section': val_section, 'accuracy': val_accuracy_epoch, 'loss': val_loss_epoch, 'f1_micro': val_f1_micro_epoch, 'f1_macro': val_f1_macro_epoch, 'f1_weighted': val_f1_weighted_epoch})
+                
+                train_result.to_csv('logs/section_result/train_result.csv', index=False, encoding='utf-8')
+                valid_result.to_csv('logs/section_result/valid_result.csv', index=False, encoding='utf-8')
+
                 if round(val_loss, 2) < round(best_loss[section], 2):
                     if not os.path.exists('checkpoints/section_result'):
                         os.makedirs('checkpoints/section_result')
@@ -241,15 +254,6 @@ class Section_Trainer(object):
 
                 else:
                     fail[section] += 1
-
-        if not os.path.exists('logs/section_result'):
-            os.makedirs('logs/section_result')
-
-        train_result = pd.DataFrame({'epoch': train_epoch, 'section': train_section, 'accuracy': train_accuracy_epoch, 'loss': train_loss_epoch, 'f1_micro': train_f1_micro_epoch, 'f1_macro': train_f1_macro_epoch, 'f1_weighted': train_f1_weighted_epoch})
-        valid_result = pd.DataFrame({'epoch': val_epoch, 'section': val_section, 'accuracy': val_accuracy_epoch, 'loss': val_loss_epoch, 'f1_micro': val_f1_micro_epoch, 'f1_macro': val_f1_macro_epoch, 'f1_weighted': val_f1_weighted_epoch})
-        
-        train_result.to_csv('logs/section_result/train_result.csv', index=False, encoding='utf-8')
-        valid_result.to_csv('logs/section_result/valid_result.csv', index=False, encoding='utf-8')
 
     def test(self, datamodule):
         level_on_nodes, idx_on_section, section_on_idx, section_parent_child = self.tree.get_hierarchy()
