@@ -188,6 +188,10 @@ class Section_Trainer(object):
                     continue
         
                 self.train_set, self.valid_set = datamodule.section_dataloader(stage='fit', tree=self.tree, section=section)
+                
+                if epoch > 0:
+                    self.checkpoint = torch.load(f'checkpoints/section_result/section_{section}_temp.pt')
+                
                 self.initialize_model(num_classes=len(idx_on_section[section]))
                 self.model.zero_grad()
 
