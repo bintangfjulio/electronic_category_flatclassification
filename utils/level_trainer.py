@@ -46,7 +46,7 @@ class Level_Trainer(object):
         return accuracy, f1_micro, f1_macro, f1_weighted
     
     def initialize_model(self, num_classes):
-        self.model = BERT_CNN(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout)
+        self.model = BERT_CNN(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout, level=True)
 
         if self.level_weight is not None:
             self.model.load_state_dict(self.level_weight['model_state'])
@@ -84,7 +84,7 @@ class Level_Trainer(object):
             input_ids = input_ids.to(self.device)
             target = target.to(self.device)
 
-            logits = self.model(input_ids=input_ids, level=True)
+            logits = self.model(input_ids=input_ids)
 
             preds = self.output_layer(logits) 
 
@@ -137,7 +137,7 @@ class Level_Trainer(object):
                 input_ids = input_ids.to(self.device)
                 target = target.to(self.device)
 
-                logits = self.model(input_ids=input_ids, level=True)
+                logits = self.model(input_ids=input_ids)
                 preds = self.output_layer(logits) 
 
                 loss = self.criterion(preds, target)
@@ -186,7 +186,7 @@ class Level_Trainer(object):
                 input_ids = input_ids.to(self.device)
                 target = target.to(self.device)
 
-                logits = self.model(input_ids=input_ids, level=True)
+                logits = self.model(input_ids=input_ids)
                 preds = self.output_layer(logits) 
 
                 loss = self.criterion(preds, target)
