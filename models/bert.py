@@ -20,7 +20,7 @@ class BERT(nn.Module):
         last_hidden_state = bert_output[0]
         pooler = last_hidden_state[:, 0]
         pooled_output = self.relu(self.hidden_layer(pooler))
-        pooler = self.dropout(pooler)
+        logits = self.dropout(pooled_output)
 
         if self.level is not None:
             return logits
