@@ -7,7 +7,7 @@ from utils.level_trainer import Level_Trainer
 from utils.section_trainer import Section_Trainer
 
 class Trainer_Helper(object):
-    def __init__(self, method, dataset, bert_model, seed, max_epochs, lr, dropout, patience):
+    def __init__(self, method, dataset, bert_model, seed, max_epochs, lr, dropout, patience, cnn_mode):
         tree = Tree_Helper(tree_file=f'datasets/{dataset}_hierarchy.tree')
 
         if not os.path.exists(f'datasets/{dataset}_hierarchy.tree'):
@@ -22,7 +22,8 @@ class Trainer_Helper(object):
                                         max_epochs=max_epochs,
                                         lr=lr,
                                         dropout=dropout,
-                                        patience=patience)
+                                        patience=patience,
+                                        cnn_mode=cnn_mode)
 
         elif method == 'level':
             self.trainer = Level_Trainer(tree=tree,
@@ -31,7 +32,8 @@ class Trainer_Helper(object):
                                         max_epochs=max_epochs,
                                         lr=lr,
                                         dropout=dropout,
-                                        patience=patience)
+                                        patience=patience,
+                                        cnn_mode=cnn_mode)
 
         elif method == 'section':
             self.trainer = Section_Trainer(tree=tree,
@@ -40,7 +42,8 @@ class Trainer_Helper(object):
                                         max_epochs=max_epochs,
                                         lr=lr,
                                         dropout=dropout,
-                                        patience=patience)
+                                        patience=patience,
+                                        cnn_mode=cnn_mode)
 
     def fit(self, datamodule):
         self.trainer.fit(datamodule=datamodule)

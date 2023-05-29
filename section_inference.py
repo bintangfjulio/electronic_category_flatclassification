@@ -4,12 +4,13 @@ import torch
 import argparse
 import pandas as pd
 
+from models.bert import BERT
 from models.bert_cnn import BERT_CNN
 from utils.tree_helper import Tree_Helper
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
 from transformers import BertTokenizer
 
-def Inference(text, bert_model, dropout_prob, checkpoint, max_length, num_classes):
+def Inference(text, bert_model, dropout_prob, checkpoint, max_length, num_classes, cnn_mode):
     stop_words = StopWordRemoverFactory().get_stop_words()
     tokenizer = BertTokenizer.from_pretrained(bert_model)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -35,7 +36,12 @@ def Inference(text, bert_model, dropout_prob, checkpoint, max_length, num_classe
     
     input_ids = token['input_ids'].to(device)
     
-    model = BERT_CNN(num_classes=num_classes, bert_model=bert_model, dropout=dropout_prob)
+    if cnn_mode:
+        model = BERT_CNN(num_classes=num_classes, bert_model=bert_model, dropout=dropout_prob)
+
+    else: 
+        model = BERT(num_classes=num_classes, bert_model=bert_model, dropout=dropout_prob)
+
     model.load_state_dict(checkpoint['model_state'])
     model.to(device)
     model.zero_grad()
@@ -54,12 +60,13 @@ def parsing_argument():
     parser.add_argument("--dataset", type=str, default='large')
     parser.add_argument("--bert_model", type=str, default='indolem/indobert-base-uncased')
     parser.add_argument("--dropout", type=float, default=0.1)
+    parser.add_argument("--cnn_mode", type=bool, default=True)
     config = vars(parser.parse_args())
 
-    return config['dataset'], config['bert_model'], config['dropout']
+    return config['dataset'], config['bert_model'], config['dropout'], config['cnn_mode']
 
 if __name__ == '__main__':
-    type_set, bert_model, dropout_prob = parsing_argument()
+    type_set, bert_model, dropout_prob, cnn_mode = parsing_argument()
     text = input('Insert text to predict: ')
         
     dataset = pd.read_csv(f'datasets/{type_set}_product_tokopedia.csv')
@@ -89,7 +96,7 @@ if __name__ == '__main__':
             print('Final predicted', pivot)
             continue
 
-        preds = Inference(text=text, bert_model=bert_model, dropout_prob=dropout_prob, checkpoint=torch.load(f"checkpoints/section_result/section_{section}_temp.pt"), max_length=max_length, num_classes=len(idx_on_section[section]))
+        preds = Inference(text=text, bert_model=bert_model, dropout_prob=dropout_prob, checkpoint=torch.load(f"checkpoints/section_result/section_{section}_temp.pt"), max_length=max_length, num_classes=len(idx_on_section[section]), cnn_mode=cnn_mode)
         
         if level < (num_level - 1):
             category = idx_on_section[section][preds]
