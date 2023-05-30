@@ -46,7 +46,7 @@ class Flat_Trainer(object):
         return accuracy, f1_micro, f1_macro, f1_weighted
 
     def initialize_model(self, num_classes):
-        if self.cnn_mode:
+        if self.cnn_mode == 'cnn':
             self.model = BERT_CNN(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout)
 
         else:
