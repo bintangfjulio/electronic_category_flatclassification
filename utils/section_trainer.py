@@ -266,13 +266,11 @@ class Section_Trainer(object):
 
         preds_steps = []
         target_steps = []
-        loss_steps = []
 
         self.test_set = datamodule.section_dataloader(stage='test', tree=self.tree)
         test_progress = tqdm(self.test_set)
 
         num_level = len(level_on_nodes)
-        
         print("Test Stage...")
 
         for test_batch in test_progress:
@@ -307,28 +305,22 @@ class Section_Trainer(object):
                         section = section_on_idx[pivot]
 
                         if len(idx_on_section[section]) == 1:
-                            preds_steps.append(torch.tensor(0))
+                            preds_steps.append(torch.tensor([0]))
                             target_steps.append(target.item())
-
-                            self.model = BERT_CNN(num_classes=len(idx_on_section[section]), bert_model=self.bert_model, dropout=self.dropout)
-                            logits = self.model(input_ids=input_ids)
-                            loss_steps.append(self.criterion(logits, target).item())
-                    
+                            
                     else:
                         preds_steps.append(preds.item())
                         target_steps.append(target.item())
-                        loss_steps.append(self.criterion(logits, target).item())
 
         preds_steps = torch.tensor(preds_steps).to(self.device)
         target_steps = torch.tensor(target_steps).to(self.device)
                         
-        accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds_steps, target=target_steps)
-        loss = mean(loss_steps)         
+        accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds_steps, target=target_steps)   
 
         if not os.path.exists('logs/section_result'):
             os.makedirs('logs/section_result')
                         
-        test_result = pd.DataFrame({'accuracy': accuracy.item(), 'loss': loss, 'f1_micro': f1_micro.item(), 'f1_macro': f1_macro.item(), 'f1_weighted': f1_weighted.item()}, index=[0])
+        test_result = pd.DataFrame({'accuracy': accuracy.item(), 'f1_micro': f1_micro.item(), 'f1_macro': f1_macro.item(), 'f1_weighted': f1_weighted.item()}, index=[0])
         test_result.to_csv('logs/section_result/test_result.csv', index=False, encoding='utf-8')
 
     def create_graph(self):
