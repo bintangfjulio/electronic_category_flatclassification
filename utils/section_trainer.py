@@ -343,7 +343,7 @@ class Section_Trainer(object):
                         input_ids = input_ids.to(self.device)
                         target = target.to(self.device)
 
-                        if not os.path.exists(f'checkpoints/section_result/section_{section}_temp.pt'):
+                        if len(idx_on_section[section]) == 1:
                             for i in range(len(target)):
                                 each_preds.append(0)
                                 each_targets.append(target[i].item())
@@ -412,10 +412,12 @@ class Section_Trainer(object):
 
         df.to_csv('raw_test_result.csv', index=False, encoding='utf-8')
 
-        accuracy_metric = MulticlassAccuracy(num_classes=23).to('cuda')
-        f1_micro_metric = MulticlassF1Score(num_classes=23, average='micro').to('cuda')
-        f1_macro_metric = MulticlassF1Score(num_classes=23, average='macro').to('cuda')
-        f1_weighted_metric = MulticlassF1Score(num_classes=23, average='weighted').to('cuda')
+        x = df['targets'].max() + 1
+
+        accuracy_metric = MulticlassAccuracy(num_classes=x).to('cuda')
+        f1_micro_metric = MulticlassF1Score(num_classes=x, average='micro').to('cuda')
+        f1_macro_metric = MulticlassF1Score(num_classes=x, average='macro').to('cuda')
+        f1_weighted_metric = MulticlassF1Score(num_classes=x, average='weighted').to('cuda')
 
         preds = torch.tensor(df[['preds']].values.tolist()).to('cuda')
         target = torch.tensor(df[['targets']].values.tolist()).to('cuda')
