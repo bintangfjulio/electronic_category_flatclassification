@@ -340,7 +340,7 @@ class Preprocessor(object):
                 test_dataloader = DataLoader(dataset=filtered_data,
                                             batch_size=3000,
                                             num_workers=multiprocessing.cpu_count())
-            else:
+            elif level == 0:
                 test_dataloader = DataLoader(dataset=section_test_set,
                                             batch_size=3000,
                                             num_workers=multiprocessing.cpu_count())
