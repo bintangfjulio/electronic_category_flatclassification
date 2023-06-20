@@ -12,10 +12,9 @@ from tqdm import tqdm
 from torchmetrics.classification import MulticlassAccuracy
 from torchmetrics.classification import MulticlassF1Score
 from models.bert_cnn import BERT_CNN
-from models.bert import BERT
 
 class Flat_Trainer(object):
-    def __init__(self, tree, bert_model, seed, max_epochs, lr, dropout, patience, cnn_mode):
+    def __init__(self, tree, bert_model, seed, max_epochs, lr, dropout, patience):
         super(Flat_Trainer, self).__init__()
         np.random.seed(seed) 
         torch.manual_seed(seed)
@@ -35,7 +34,6 @@ class Flat_Trainer(object):
         self.criterion = nn.CrossEntropyLoss()
         self.patience = patience
         self.checkpoint = None
-        self.cnn_mode = cnn_mode
 
     def scoring_result(self, preds, target):
         accuracy = self.accuracy_metric(preds, target)
@@ -46,11 +44,7 @@ class Flat_Trainer(object):
         return accuracy, f1_micro, f1_macro, f1_weighted
 
     def initialize_model(self, num_classes):
-        if self.cnn_mode == 'cnn':
-            self.model = BERT_CNN(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout)
-
-        else:
-            self.model = BERT(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout)
+        self.model = BERT_CNN(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout)
         
         if self.checkpoint is not None:
             self.model.load_state_dict(self.checkpoint['model_state'])

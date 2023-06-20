@@ -1,6 +1,7 @@
 import os
 import torch
 import random
+import pickle
 import pandas as pd
 import torch.nn as nn
 import numpy as np
@@ -12,10 +13,10 @@ from tqdm import tqdm
 from torchmetrics.classification import MulticlassAccuracy
 from torchmetrics.classification import MulticlassF1Score
 from models.bert_cnn import BERT_CNN
-from models.bert import BERT
+from torch.utils.data import TensorDataset
 
 class Section_Trainer(object):
-    def __init__(self, tree, bert_model, seed, max_epochs, lr, dropout, patience, cnn_mode):
+    def __init__(self, tree, bert_model, seed, max_epochs, lr, dropout, patience):
         super(Section_Trainer, self).__init__()
         np.random.seed(seed) 
         torch.manual_seed(seed)
@@ -35,7 +36,6 @@ class Section_Trainer(object):
         self.criterion = nn.CrossEntropyLoss()
         self.patience = patience
         self.checkpoint = None
-        self.cnn_mode = cnn_mode
 
     def scoring_result(self, preds, target):
         accuracy = self.accuracy_metric(preds, target)
@@ -46,11 +46,7 @@ class Section_Trainer(object):
         return accuracy, f1_micro, f1_macro, f1_weighted
 
     def initialize_model(self, num_classes):
-        if self.cnn_mode == 'cnn':
-            self.model = BERT_CNN(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout)
-
-        else:
-            self.model = BERT(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout)
+        self.model = BERT_CNN(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout)
 
         if self.checkpoint is not None:
             self.model.load_state_dict(self.checkpoint['model_state'])
@@ -187,10 +183,10 @@ class Section_Trainer(object):
 
         for epoch in range(self.max_epochs):
             for section in section_idx:
-                if fail[section] == self.patience:
+                if len(idx_on_section[section]) == 1:
                     continue
 
-                elif len(idx_on_section[section]) == 1:
+                elif fail[section] == self.patience:
                     continue
         
                 self.train_set, self.valid_set = datamodule.section_dataloader(stage='fit', tree=self.tree, section=section)
@@ -232,7 +228,7 @@ class Section_Trainer(object):
                 if not os.path.exists('logs/section_result'):
                     os.makedirs('logs/section_result')
 
-                if os.path.exists('logs/section_result/train_result.csv' or 'logs/section_result/valid_result.csv'):
+                if os.path.exists('logs/section_result/train_result.csv' and 'logs/section_result/valid_result.csv'):
                     os.remove('logs/section_result/train_result.csv')
                     os.remove('logs/section_result/valid_result.csv')
 
@@ -262,66 +258,177 @@ class Section_Trainer(object):
                     fail[section] += 1
 
     def test(self, datamodule):
+        print("Test Stage...")
         level_on_nodes, idx_on_section, section_on_idx, section_parent_child = self.tree.get_hierarchy()
 
-        preds_steps = []
-        target_steps = []
-
-        self.test_set = datamodule.section_dataloader(stage='test', tree=self.tree)
-        test_progress = tqdm(self.test_set)
-
         num_level = len(level_on_nodes)
-        print("Test Stage...")
+        section_idx = list(idx_on_section.keys())
 
-        for test_batch in test_progress:
-            input_ids, target = test_batch
-            
-            input_ids = input_ids.to(self.device)
-            target = target.to(self.device)
+        for i in range(num_level):
+            input_ids_data = []
+            target_data = []
+            each_preds = []
+            each_targets = []
+            next_section = []
 
-            pivot = list(section_parent_child['root'])[0]
-            section = section_on_idx[pivot]
+            level = i
 
-            for level in range(num_level):                
-                if len(idx_on_section[section]) == 1:
-                    continue
+            if level == 0:
+                self.test_set = datamodule.section_dataloader(stage='test', tree=self.tree, level=level)
+                test_progress = tqdm(self.test_set)
 
-                self.checkpoint = torch.load(f'checkpoints/section_result/section_{section}_temp.pt')
-                self.initialize_model(num_classes=len(idx_on_section[section]))
-                self.model.zero_grad()
-                
-                print("Loading Checkpoint on Epoch", self.checkpoint['epoch'], "for Section", section)
-                print("=" * 50)
+                for test_batch in test_progress:
+                    input_ids, target = test_batch
 
-                self.model.eval()
+                    ground_truth = target
+                    target = target[:,level]
+                    
+                    input_ids = input_ids.to(self.device)
+                    target = target.to(self.device)
 
-                with torch.no_grad():
-                    logits = self.model(input_ids=input_ids)
-                    preds = torch.argmax(logits, dim=1)
+                    pivot = list(section_parent_child['root'])[0]
+                    section = section_on_idx[pivot]
 
-                    if level < (num_level - 1):
-                        category = idx_on_section[section][preds]
-                        pivot = list(section_parent_child[category])[0]
-                        section = section_on_idx[pivot]
+                    self.checkpoint = torch.load(f'checkpoints/section_result/section_{section}_temp.pt')
+                    self.initialize_model(num_classes=len(idx_on_section[section]))
+                    self.model.zero_grad()
+                    self.model.eval()
 
-                        if len(idx_on_section[section]) == 1:
-                            preds_steps.append(torch.tensor([0]))
-                            target_steps.append(target.item())
+                    with torch.no_grad():
+                        logits = self.model(input_ids=input_ids)
+                        preds = torch.argmax(logits, dim=1)
+
+                        for i in range(len(preds)):
+                            each_preds.append(preds[i].item())
+                            each_targets.append(target[i].item())
+
+                            input_ids_data.append(input_ids[i].cpu().tolist())
+                            target_data.append(ground_truth[i].cpu().tolist())
+
+                            if preds[i].item() == target[i].item():
+                                category = idx_on_section[section][preds[i].item()]
+                                pivot = list(section_parent_child[category])[0]
+                                lower_section = section_on_idx[pivot]
+                                next_section.append([lower_section])
+
+                            else:
+                                next_section.append([-1])
+
+                        result = pd.DataFrame({'input_ids': input_ids_data, 'ground_truth': target_data, 'preds': each_preds, 'targets': each_targets, 'next_section': next_section})
+                        result.to_csv(f'level_{level}_section_result.csv', index=False, encoding='utf-8')
+
+                        x = torch.tensor(input_ids_data)
+                        y = torch.tensor(target_data)
+                        z = torch.tensor(next_section)
+                        
+                        t = TensorDataset(x, y, z)
+                        with open(f'level_{level}_section_result.pkl', 'wb') as tensor :
+                            pickle.dump(t, tensor)
+
+            elif level > 0:
+                for section in section_idx:
+                    self.test_set = datamodule.section_dataloader(stage='test', tree=self.tree, section=section, level=level)
+
+                    if(len(self.test_set) == 0):
+                        continue
+
+                    test_progress = tqdm(self.test_set)
+
+                    for test_batch in test_progress:
+                        input_ids, target, _ = test_batch
+
+                        ground_truth = target
+                        target = target[:,level]
+                        
+                        input_ids = input_ids.to(self.device)
+                        target = target.to(self.device)
+
+                        if not os.path.exists(f'checkpoints/section_result/section_{section}_temp.pt'):
+                            for i in range(len(target)):
+                                each_preds.append(0)
+                                each_targets.append(target[i].item())
+
+                                input_ids_data.append(input_ids[i].cpu().tolist())
+                                target_data.append(ground_truth[i].cpu().tolist())
+                                next_section.append([-1])
+                                
+                            continue
+
+                        self.checkpoint = torch.load(f'checkpoints/section_result/section_{section}_temp.pt')
+                        self.initialize_model(num_classes=len(idx_on_section[section]))
+                        self.model.zero_grad()
+                        self.model.eval()
+
+                        with torch.no_grad():
+                            logits = self.model(input_ids=input_ids)
+                            preds = torch.argmax(logits, dim=1)
+
+                            for i in range(len(preds)):
+                                each_preds.append(preds[i].item())
+                                each_targets.append(target[i].item())
+
+                                input_ids_data.append(input_ids[i].cpu().tolist())
+                                target_data.append(ground_truth[i].cpu().tolist())
+
+                                if level == (num_level - 1):
+                                    next_section.append([-1])
+
+                                else: 
+                                    if preds[i].item() == target[i].item():
+                                        category = idx_on_section[section][preds[i].item()]
+                                        pivot = list(section_parent_child[category])[0]
+                                        lower_section = section_on_idx[pivot]
+                                        next_section.append([lower_section])
+
+                                    else:
+                                        next_section.append([-1])
+
+                            result = pd.DataFrame({'input_ids': input_ids_data, 'ground_truth': target_data, 'preds': each_preds, 'targets': each_targets, 'next_section': next_section})
+                            result.to_csv(f'level_{level}_section_result.csv', index=False, encoding='utf-8')
+
+                            x = torch.tensor(input_ids_data)
+                            y = torch.tensor(target_data)
+                            z = torch.tensor(next_section)
                             
-                    else:
-                        preds_steps.append(preds.item())
-                        target_steps.append(target.item())
+                            t = TensorDataset(x, y, z)
+                            with open(f'level_{level}_section_result.pkl', 'wb') as tensor :
+                                pickle.dump(t, tensor)
 
-        preds_steps = torch.tensor(preds_steps).to(self.device)
-        target_steps = torch.tensor(target_steps).to(self.device)
-                        
-        accuracy, f1_micro, f1_macro, f1_weighted = self.scoring_result(preds=preds_steps, target=target_steps)   
+        df1 = pd.read_csv('level_0_section_result.csv')
+        df2 = pd.read_csv('level_1_section_result.csv')
+        df3 = pd.read_csv('level_2_section_result.csv')
 
-        if not os.path.exists('logs/section_result'):
-            os.makedirs('logs/section_result')
-                        
-        test_result = pd.DataFrame({'accuracy': accuracy.item(), 'f1_micro': f1_micro.item(), 'f1_macro': f1_macro.item(), 'f1_weighted': f1_weighted.item()}, index=[0])
-        test_result.to_csv('logs/section_result/test_result.csv', index=False, encoding='utf-8')
+        df1 = df1[df1['next_section'] == '[-1]']
+        df2 = df2[df2['next_section'] == '[-1]']
+
+        df1['next_section'] = 'wrong at level 0'
+        df2['next_section'] = 'wrong at level 1'
+        df3['next_section'] = 'reach lowest level'
+
+        df = pd.concat([df1, df2, df3])
+
+        df = df[['preds', 'targets', 'next_section']]
+        df.rename(columns={'next_section': 'status'}, inplace=True)
+
+        df.to_csv('raw_test_result.csv', index=False, encoding='utf-8')
+
+        accuracy_metric = MulticlassAccuracy(num_classes=23).to('cuda')
+        f1_micro_metric = MulticlassF1Score(num_classes=23, average='micro').to('cuda')
+        f1_macro_metric = MulticlassF1Score(num_classes=23, average='macro').to('cuda')
+        f1_weighted_metric = MulticlassF1Score(num_classes=23, average='weighted').to('cuda')
+
+        preds = torch.tensor(df[['preds']].values.tolist()).to('cuda')
+        target = torch.tensor(df[['targets']].values.tolist()).to('cuda')
+
+        print(df['targets'].value_counts())
+
+        accuracy = accuracy_metric(preds, target)
+        f1_micro = f1_micro_metric(preds, target)
+        f1_macro = f1_macro_metric(preds, target)
+        f1_weighted = f1_weighted_metric(preds, target)
+
+        test_result = pd.DataFrame({'accuracy': accuracy.item(), 'f1_micro': f1_micro.item(), 'f1_macro': f1_macro.item(), 'f1_weighted': f1_weighted.item()}, index=[0])              
+        test_result.to_csv(f'logs/section_result/test_result.csv', index=False, encoding='utf-8')
 
     def create_graph(self):
         _, idx_on_section, _, _ = self.tree.get_hierarchy()

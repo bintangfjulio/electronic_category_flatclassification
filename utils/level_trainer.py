@@ -13,10 +13,9 @@ from tqdm import tqdm
 from torchmetrics.classification import MulticlassAccuracy
 from torchmetrics.classification import MulticlassF1Score
 from models.bert_cnn import BERT_CNN
-from models.bert import BERT
 
 class Level_Trainer(object):
-    def __init__(self, tree, bert_model, seed, max_epochs, lr, dropout, patience, cnn_mode):
+    def __init__(self, tree, bert_model, seed, max_epochs, lr, dropout, patience):
         super(Level_Trainer, self).__init__()
         np.random.seed(seed) 
         torch.manual_seed(seed)
@@ -37,7 +36,6 @@ class Level_Trainer(object):
         self.patience = patience
         self.level_weight = None
         self.output_weight = None
-        self.cnn_mode = cnn_mode
     
     def scoring_result(self, preds, target):
         accuracy = self.accuracy_metric(preds, target)
@@ -48,11 +46,7 @@ class Level_Trainer(object):
         return accuracy, f1_micro, f1_macro, f1_weighted
     
     def initialize_model(self, num_classes):
-        if self.cnn_mode == 'cnn':
-            self.model = BERT_CNN(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout, level=True)
-
-        else:
-            self.model = BERT(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout, level=True)
+        self.model = BERT_CNN(num_classes=num_classes, bert_model=self.bert_model, dropout=self.dropout, level=True)
 
         if self.level_weight is not None:
             self.model.load_state_dict(self.level_weight['model_state'])
@@ -61,11 +55,7 @@ class Level_Trainer(object):
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=0.5, total_iters=5) 
 
-        if self.cnn_mode == 'cnn':
-            self.output_layer = nn.Linear(self.model.get_window_length() * self.model.get_out_channels_length(), num_classes)
-
-        else:
-            self.output_layer = nn.Linear(768, 768)
+        self.output_layer = nn.Linear(self.model.get_window_length() * self.model.get_out_channels_length(), num_classes)
 
         if self.output_weight is not None:
             self.output_layer.load_state_dict(self.output_weight)

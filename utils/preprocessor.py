@@ -140,11 +140,15 @@ class Preprocessor(object):
                     target.append(section)
 
                 elif stage_idx == 1:
-                    last_node = row[-1].split(" > ")[-1].lower()
-                    section_idx = section_on_idx[last_node]
-                    nodes_on_section = idx_on_section[section_idx]
-                    section_target = nodes_on_section.index(last_node)
-                    target.append(section_target)         
+                    nodes = row[-1].lower().split(" > ")
+                    each_level_target = []
+
+                    for node in nodes:
+                        section_idx = section_on_idx[node]
+                        section_target = idx_on_section[section_idx].index(node)
+                        each_level_target.append(section_target)
+
+                    target.append(each_level_target)
                     
                 input_ids.append(token['input_ids'])
                 
@@ -319,15 +323,26 @@ class Preprocessor(object):
 
             return test_dataloader
         
-    def section_dataloader(self, stage, tree, section=None):
+    def section_dataloader(self, stage, tree, section=None, level=None):
         section_train_set, section_valid_set, section_test_set = self.preprocessor(tree=tree)
 
         if stage == 'fit':
             return section_train_set[section], section_valid_set[section]
 
         elif stage == 'test':
-            test_dataloader = DataLoader(dataset=section_test_set,
-                                        batch_size=1,
-                                        num_workers=multiprocessing.cpu_count())
+            if level > 0:
+                with open(f'level_{level - 1}_section_result.pkl', 'rb') as x:
+                    dataset = pickle.load(x)
+
+                filter_condition = lambda sample: sample[2] == section
+                filtered_data = [sample for sample in dataset if filter_condition(sample)]
+
+                test_dataloader = DataLoader(dataset=filtered_data,
+                                            batch_size=3000,
+                                            num_workers=multiprocessing.cpu_count())
+            else:
+                test_dataloader = DataLoader(dataset=section_test_set,
+                                            batch_size=3000,
+                                            num_workers=multiprocessing.cpu_count())
 
             return test_dataloader
