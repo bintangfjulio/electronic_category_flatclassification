@@ -412,7 +412,7 @@ class Section_Trainer(object):
 
         df.to_csv('raw_test_result.csv', index=False, encoding='utf-8')
 
-        x = df['targets'].max() + 1
+        x = int(df['targets'].max() + 1)
 
         accuracy_metric = MulticlassAccuracy(num_classes=x).to('cuda')
         f1_micro_metric = MulticlassF1Score(num_classes=x, average='micro').to('cuda')
