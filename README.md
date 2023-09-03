@@ -6,4 +6,4 @@ You also can import it from this repository dataset releases
 ```
 python main.py --method= ...
 ```
-There are method options for run main.py: method: flat, level, section
+There are three method options for run main.py: flat, level, section
