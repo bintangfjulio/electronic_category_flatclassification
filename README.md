@@ -6,7 +6,7 @@ You also can import it from this repository dataset releases
 ```
 python main.py --method= ...
 ```
-There are three method options for run main.py: flat, level, section <br> <br>
+There are three method options for run main.py: flat, level, section <br> 
 
 Flat: Training model with only lowest level class as multiclass classification <br>
 Level: Training model each level and transfer the parameters to lower level <br>
