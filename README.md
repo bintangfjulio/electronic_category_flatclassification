@@ -10,4 +10,4 @@ There are three method options for run main.py: flat, level, section <br> <br>
 
 Flat: Training model with only lowest level class as multiclass classification <br>
 Level: Training model each level and transfer the parameters to lower level <br>
-Section: Training model with segmentation based on upper level category to lower level category as child
+Section: Training model with segmentation based on upper-level category to lower-level category as child class
